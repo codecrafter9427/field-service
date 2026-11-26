@@ -11,12 +11,14 @@ from sqlalchemy import func, select
 from app.api.deps import CurrentUser, DbSession
 from app.api.errors import not_found
 from app.models import Customer
+from app.schemas.assets import ServiceHistoryItem
 from app.schemas.common import Page, PageMeta
 from app.schemas.customers import (
     CustomerCreate,
     CustomerOut,
     CustomerUpdate,
 )
+from app.services.history import service_history
 
 router = APIRouter()
 
@@ -116,3 +118,16 @@ def archive_customer(
     row = _get_customer(db, user, customer_id)
     row.archived_at = datetime.now(tz=timezone.utc)
     db.commit()
+
+
+@router.get(
+    "/{customer_id}/service-history",
+    response_model=list[ServiceHistoryItem],
+)
+def customer_service_history(
+    customer_id: UUID, user: CurrentUser, db: DbSession
+) -> list[ServiceHistoryItem]:
+    customer = _get_customer(db, user, customer_id)
+    return service_history(
+        db, organization_id=user.organization_id, customer_id=customer.id
+    )

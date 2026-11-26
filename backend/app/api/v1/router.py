@@ -14,6 +14,7 @@ from app.api.v1 import (
     reports,
     schedule,
     service_locations,
+    signoffs,
     time_entries,
     work_orders,
 )
@@ -31,6 +32,7 @@ api_router.include_router(assignments.router, prefix="/assignments", tags=["assi
 api_router.include_router(checklists.router, prefix="/checklists", tags=["checklists"])
 api_router.include_router(time_entries.router, prefix="/time-entries", tags=["time-entries"])
 api_router.include_router(parts_used.router, prefix="/parts-used", tags=["parts-used"])
+api_router.include_router(signoffs.router, tags=["signoffs"])
 api_router.include_router(attachments.router, prefix="/attachments", tags=["attachments"])
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
 api_router.include_router(ai.router, prefix="/ai", tags=["ai"])

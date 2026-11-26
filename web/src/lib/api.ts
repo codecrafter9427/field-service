@@ -125,10 +125,97 @@ export type Asset = {
   id: string;
   organization_id: string;
   customer_id: string;
+  service_location_id: string | null;
   name: string;
   serial_number: string | null;
   asset_type: string | null;
+  manufacturer: string | null;
+  model_number: string | null;
+  warranty_expires_on: string | null;
   maintenance_notes: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type ServiceHistoryItem = {
+  work_order_id: string;
+  title: string;
+  status: string;
+  priority: string;
+  customer_id: string;
+  customer_name: string | null;
+  asset_id: string | null;
+  asset_name: string | null;
+  scheduled_start: string | null;
+  completed_note: string | null;
+  updated_at: string;
+};
+
+export type Signoff = {
+  id: string;
+  organization_id: string;
+  work_order_id: string;
+  signer_name: string;
+  signed_at: string;
+  acknowledgement_text: string;
+  signature_storage_key: string | null;
+  is_certified_esignature: boolean;
+  disclaimer: string;
+};
+
+export type PartUsed = {
+  id: string;
+  work_order_id: string;
+  part_name: string;
+  quantity: string;
+  unit_cost: string | null;
+  notes: string | null;
+  line_total: string | null;
+};
+
+export type ServiceSummaryReport = {
+  jobs_by_status: { status: string; count: number }[];
+  total_jobs: number;
+  completed_jobs: number;
+  completion_rate: number;
+  labor: {
+    technician_id: string | null;
+    technician_name: string | null;
+    total_minutes: number;
+    entry_count: number;
+  }[];
+  total_labor_minutes: number;
+  parts: {
+    part_name: string;
+    total_quantity: string;
+    total_cost: string | null;
+  }[];
+  parts_total_cost: string | null;
+  generated_at: string;
+};
+
+export type PrintableServiceReport = {
+  work_order: WorkOrder;
+  customer_name: string | null;
+  location_label: string | null;
+  asset_name: string | null;
+  notes: JobActivity[];
+  checklists: {
+    name: string;
+    items: { label: string; is_completed: boolean; is_required: boolean }[];
+  }[];
+  time_entries: {
+    technician_name: string | null;
+    started_at: string;
+    ended_at: string | null;
+    minutes: number | null;
+    notes: string | null;
+  }[];
+  parts: PartUsed[];
+  signoffs: Signoff[];
+  labor_minutes_total: number;
+  parts_cost_total: string | null;
+  print_hint: string;
 };
 
 export type AISource = {

@@ -1,4 +1,4 @@
-"""FastAPI application entrypoint — Field Service Milestone 3."""
+"""FastAPI application entrypoint — Field Service Milestone 4."""
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,11 +8,11 @@ from app.core.config import settings
 
 app = FastAPI(
     title="Field Service API",
-    version="0.3.0",
+    version="0.4.0",
     description=(
-        "Portfolio MVP Milestone 3 — AI service reports, job prep, Service Memory. "
-        "DemoAIProvider is default; Ollama is optional. "
-        "Offline sync and signature capture remain later milestones."
+        "Portfolio MVP Milestone 4 — printable service reports, acknowledgement "
+        "signoff, assets CRUD, labor/parts reports, polished dispatcher UX. "
+        "No paid APIs. Offline sync and certified e-sign remain out of scope."
     ),
 )
 
@@ -30,7 +30,7 @@ def health() -> dict[str, str]:
     return {
         "status": "ok",
         "service": "field-service",
-        "milestone": "3",
+        "milestone": "4",
         "ai_provider": settings.ai_provider,
     }
 

@@ -285,7 +285,7 @@ def test_service_report_tenant_isolation(client: TestClient, other_token: str):
     assert res.status_code == 404
 
 
-def test_health_milestone_3(client: TestClient):
+def test_health_milestone_4(client: TestClient):
     res = client.get("/health")
     assert res.status_code == 200
-    assert res.json()["milestone"] == "3"
+    assert res.json()["milestone"] == "4"

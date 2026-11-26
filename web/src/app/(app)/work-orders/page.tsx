@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -9,6 +10,7 @@ import {
   type Customer,
   type JobActivity,
   type Page,
+  type PartUsed,
   type ServiceLocation,
   type Technician,
   type TimeEntry,
@@ -47,6 +49,8 @@ export default function WorkOrdersPage() {
   const [activities, setActivities] = useState<JobActivity[]>([]);
   const [checklists, setChecklists] = useState<Checklist[]>([]);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [parts, setParts] = useState<PartUsed[]>([]);
+  const [partName, setPartName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
 
@@ -90,14 +94,16 @@ export default function WorkOrdersPage() {
     const token = getToken();
     if (!token) return;
     try {
-      const [acts, cls, times] = await Promise.all([
+      const [acts, cls, times, usedParts] = await Promise.all([
         apiGet<JobActivity[]>(`/work-orders/${workOrderId}/activities`, token),
         apiGet<Checklist[]>(`/checklists?work_order_id=${workOrderId}`, token),
         apiGet<TimeEntry[]>(`/time-entries?work_order_id=${workOrderId}`, token),
+        apiGet<PartUsed[]>(`/parts-used?work_order_id=${workOrderId}`, token),
       ]);
       setActivities(acts);
       setChecklists(cls);
       setTimeEntries(times);
+      setParts(usedParts);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load job detail");
     }
@@ -245,11 +251,31 @@ export default function WorkOrdersPage() {
     }
   }
 
+  async function onAddPart(e: FormEvent) {
+    e.preventDefault();
+    if (!selected || !partName.trim()) return;
+    const token = getToken();
+    if (!token) return;
+    try {
+      await apiSend("/parts-used", token, "POST", {
+        work_order_id: selected.id,
+        part_name: partName.trim(),
+        quantity: "1",
+        unit_cost: "10.00",
+      });
+      setPartName("");
+      await loadDetail(selected.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Parts entry failed");
+    }
+  }
+
   return (
     <>
       <h1 className="page-title">Work Orders</h1>
       <p className="page-sub">
-        Create jobs, assign technicians, update status, notes, checklist, and time.
+        Create jobs, assign technicians, update status, notes, checklist, parts, and
+        open a printable service report.
       </p>
       {error ? <div className="error">{error}</div> : null}
       {warning ? <div className="badge warn">{warning}</div> : null}
@@ -431,6 +457,12 @@ export default function WorkOrdersPage() {
                     Assign
                   </button>
                 </form>
+                <Link
+                  className="btn secondary small"
+                  href={`/reports/print/${selected.id}`}
+                >
+                  Printable service report
+                </Link>
               </>
             ) : (
               <p className="muted">Select a job</p>
@@ -503,6 +535,32 @@ export default function WorkOrdersPage() {
               {timeEntries.map((t) => (
                 <li key={t.id}>
                   {t.minutes ?? "?"} min · {t.notes ?? "No notes"}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="panel">
+            <h2>Parts</h2>
+            <form className="toolbar" onSubmit={onAddPart}>
+              <label className="field" style={{ flex: 1, marginBottom: 0 }}>
+                Part name
+                <input
+                  value={partName}
+                  onChange={(e) => setPartName(e.target.value)}
+                  disabled={!selected}
+                  required
+                />
+              </label>
+              <button className="btn small" type="submit" disabled={!selected}>
+                Add part
+              </button>
+            </form>
+            <ul className="stack" style={{ marginTop: "0.85rem" }}>
+              {parts.map((p) => (
+                <li key={p.id}>
+                  {p.part_name} × {p.quantity}
+                  {p.line_total ? ` · ${p.line_total}` : ""}
                 </li>
               ))}
             </ul>

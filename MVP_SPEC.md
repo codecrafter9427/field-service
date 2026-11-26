@@ -12,7 +12,7 @@ Scheduling, dispatch, and job execution for maintenance, repair, and installatio
 | --- | --- |
 | Admin / Dispatcher | Customers, schedule, assignment, reports, settings |
 | Technician | Assigned jobs, checklists, notes, parts, signoff |
-| Customer (optional) | Read-only job-status link (backlog M4) |
+| Customer (optional) | Read-only job-status link (backlog) |
 
 ## Entities (schema)
 
@@ -29,21 +29,22 @@ Draft → Scheduled → En Route → In Progress → Waiting for Parts → Compl
 | Group | Prefix | Status |
 | --- | --- | --- |
 | Auth (demo) | `/api/v1/auth` | Demo login + `/me` (DB-backed, org-scoped) |
-| Customers | `/api/v1/customers` | Full CRUD |
+| Customers | `/api/v1/customers` | Full CRUD + service history |
 | Service locations | `/api/v1/service-locations` | Full CRUD |
-| Assets | `/api/v1/assets` | Read list/detail (write CRUD later) |
+| Assets | `/api/v1/assets` | Full CRUD + service history |
 | Work orders | `/api/v1/work-orders` | Full CRUD + assign + notes + activities |
+| Signoffs | `/api/v1/work-orders/{id}/signoffs` | Timestamped acknowledgement (not certified e-sign) |
 | Schedule | `/api/v1/schedule` | List with overlap warnings |
 | Assignments | `/api/v1/assignments` | Create/list/technicians/agenda |
 | Checklists | `/api/v1/checklists` | Create + item patch |
 | Time entries | `/api/v1/time-entries` | Create + update |
-| Parts used | `/api/v1/parts-used` | Coming Soon stub |
+| Parts used | `/api/v1/parts-used` | List + create |
 | Attachments | `/api/v1/attachments` | Coming Soon stub |
-| Reports | `/api/v1/reports/service` | Coming Soon stub |
+| Reports | `/api/v1/reports/service` | Status/labor/parts summary + printable job payload |
 | AI service report | `/api/v1/ai/service-report` | Draft + approve (human edit required) |
 | AI job prep | `/api/v1/ai/job-prep` | History summary + confirm checklist |
 | AI Service Memory | `/api/v1/ai/service-memory` | Recurring-failure search + summarize |
-| Health | `/health` | Implemented (milestone 3) |
+| Health | `/health` | Milestone 4 |
 
 Shared conventions: REST JSON, pagination/search/sort on lists, error shape `{error:{code,message,details}}`, tenant authorization on every business endpoint.
 
@@ -55,13 +56,14 @@ Overlap rule: when assigning or creating with a technician and both jobs have `s
 
 **M3:** AI Assist page — service report draft/approve, job prep + checklist confirm, Service Memory search UI; assets read list.
 
-Still later: asset write CRUD, printable service report polish, full calendar board chrome, parts UI.
+**M4:** printable service report (browser print CSS), acknowledgement signature stub, assets CRUD + history, labor/parts reports, dispatcher UX polish (parts on jobs, completion rate).
 
 ## Mobile baseline
 
-- Technician agenda API ready (`GET /assignments/agenda`)
-- Android UI run deferred
-- Offline drafts / signature capture → M4
+- Technician agenda + job detail API clients (`ApiClient` / `AgendaRepository`)
+- Android UI: agenda list → job detail; live API with demo fallback
+- Android Studio sync documented; device run optional
+- Offline drafts / certified e-sign → backlog
 
 ## AI (M3)
 
@@ -77,40 +79,26 @@ Search recurring failures by asset/customer. AI summarizes repeated issues and s
 
 ## Acceptance criteria
 
-### Milestone 1 (done)
+### Milestone 1–3 (done)
 
-1. Local Postgres via Docker Compose; `.env.example` documented
-2. Alembic migrations apply cleanly
-3. Seed creates ≥12 customers, 15 assets, 20 jobs, 5 technicians + history
-4. Demo login works for ≥2 roles; tokens are org-scoped
-5. `/health` OK; auth + tenant smoke tests pass
-6. No paid APIs required
+See README milestone checklists.
 
-### Milestone 2 (done)
+### Milestone 4 (done when)
 
-1. Customers + service locations CRUD (org-scoped)
-2. Work orders CRUD with statuses; assign technician
-3. Schedule/list warns on overlapping jobs for same technician (server-side)
-4. Job notes / checklist / time entry basic APIs + dispatcher web views
-5. API tests cover overlap warning + tenant isolation
-6. README demo: dispatcher creates job → visible in assignments/agenda API
+1. Printable service report from saved data via browser print (no paid PDF API)
+2. Acknowledgement capture UI labeled not certified e-sign; signoff API stores timestamp
+3. Assets write CRUD + service history by customer/asset
+4. Labor/parts summary reports
+5. Lint/typecheck + expanded pytest green
+6. README + DEMO.md scripted checklist
+7. KMP agenda/job detail clients polished; Android Studio sync documented
 
-### Milestone 3 (done when)
-
-1. AIProvider + DemoAIProvider + optional Ollama adapter (demo fallback)
-2. Service report draft editable; approve stores metadata without completing/signing
-3. Job prep from history/checklist; suggestions require confirm
-4. Service Memory search + AI summary with sources
-5. Web UI for report, job prep, Service Memory
-6. Tests for demo AI, Service Memory retrieval, AI auth
-7. README documents AI setup without Ollama
-
-### Full MVP vertical slice (later milestones)
+### Remaining backlog
 
 1. Offline notes/checklist/status sync with visible conflict handling
-2. Service report prints from saved data (browser print)
-3. Signoff records timestamp; labeled acknowledgement only
-4. Android technician agenda wired to live API
+2. Customer read-only job-status link
+3. iOS UI layer
+4. Attachment binary upload adapter
 
 ## Backlog by milestone
 
@@ -120,10 +108,9 @@ Search recurring failures by asset/customer. AI summarizes repeated issues and s
 - [x] Dispatch list + overlap detection
 - [x] Technician agenda API from assignments
 - [x] Status transitions, checklist, notes, time APIs + web views
+- [x] Printable service report (delivered in M4)
+- [x] Assets write CRUD (delivered in M4)
 - [ ] Attachment upload adapter
-- [ ] Printable service report
-- [ ] Assets write CRUD
-- [ ] Android agenda UI
 
 ### M3 — AI + Service Memory
 
@@ -134,9 +121,12 @@ Search recurring failures by asset/customer. AI summarizes repeated issues and s
 
 ### M4 — Polish
 
+- [x] Signature capture UI (acknowledgement label)
+- [x] Printable service-report polish
+- [x] Assets CRUD + history + labor/parts reports
+- [x] E2E / scripted demo checklist (`DEMO.md`)
+- [x] Expanded lint/format/type gates
+- [x] Android agenda/job detail API clients + Studio sync docs
 - [ ] Offline sync queue (UUID ops, retry, conflict UI)
-- [ ] Signature capture UI
 - [ ] Customer job-status link
 - [ ] iOS UI layer
-- [ ] E2E / scripted demo recording
-- [ ] Expanded lint/format/type gates

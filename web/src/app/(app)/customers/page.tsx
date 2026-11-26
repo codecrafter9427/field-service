@@ -7,6 +7,7 @@ import {
   apiSend,
   type Customer,
   type Page,
+  type ServiceHistoryItem,
   type ServiceLocation,
 } from "@/lib/api";
 import { getToken } from "@/lib/auth";
@@ -14,6 +15,7 @@ import { getToken } from "@/lib/auth";
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [locations, setLocations] = useState<ServiceLocation[]>([]);
+  const [history, setHistory] = useState<ServiceHistoryItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -42,11 +44,18 @@ export default function CustomersPage() {
     const token = getToken();
     if (!token) return;
     try {
-      const page = await apiGet<Page<ServiceLocation>>(
-        `/service-locations?customer_id=${customerId}&page_size=100`,
-        token
-      );
+      const [page, hist] = await Promise.all([
+        apiGet<Page<ServiceLocation>>(
+          `/service-locations?customer_id=${customerId}&page_size=100`,
+          token
+        ),
+        apiGet<ServiceHistoryItem[]>(
+          `/customers/${customerId}/service-history`,
+          token
+        ),
+      ]);
       setLocations(page.items);
+      setHistory(hist);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load locations");
     }
@@ -228,6 +237,26 @@ export default function CustomersPage() {
                 Create location
               </button>
             </form>
+          </div>
+
+          <div className="panel">
+            <h2>Service history</h2>
+            {history.length === 0 ? (
+              <p className="muted">No jobs for this customer yet.</p>
+            ) : (
+              <ul className="stack">
+                {history.map((h) => (
+                  <li key={h.work_order_id}>
+                    <strong>{h.title}</strong>{" "}
+                    <span className="badge">{h.status}</span>
+                    <div className="muted">
+                      {h.asset_name ? `${h.asset_name} · ` : ""}
+                      {new Date(h.updated_at).toLocaleString()}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </div>
