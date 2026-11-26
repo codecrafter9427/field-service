@@ -1,55 +1,40 @@
-"""Demo auth placeholder — not production-secure."""
+"""Demo password hashing and token helpers — not production-secure."""
 
-from dataclasses import dataclass
+from __future__ import annotations
 
-from fastapi import HTTPException, status
-
-
-@dataclass(frozen=True)
-class DemoUser:
-    id: str
-    email: str
-    role: str
-    organization_id: str
-    display_name: str
+import hashlib
+import hmac
+import secrets
 
 
-# Fictional demo users only
-DEMO_USERS: dict[str, tuple[str, DemoUser]] = {
-    "dispatcher@demo.local": (
-        "demo",
-        DemoUser(
-            id="00000000-0000-4000-8000-000000000001",
-            email="dispatcher@demo.local",
-            role="dispatcher",
-            organization_id="00000000-0000-4000-8000-000000000010",
-            display_name="Dana Dispatcher",
-        ),
-    ),
-    "tech@demo.local": (
-        "demo",
-        DemoUser(
-            id="00000000-0000-4000-8000-000000000002",
-            email="tech@demo.local",
-            role="technician",
-            organization_id="00000000-0000-4000-8000-000000000010",
-            display_name="Terry Technician",
-        ),
-    ),
-}
+def hash_password(password: str, salt: str | None = None) -> str:
+    """PBKDF2-SHA256 hash suitable for local demo credentials only."""
+    salt = salt or secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac(
+        "sha256", password.encode("utf-8"), salt.encode("utf-8"), 120_000
+    )
+    return f"pbkdf2_sha256${salt}${digest.hex()}"
 
 
-def authenticate_demo(email: str, password: str) -> DemoUser:
-    entry = DEMO_USERS.get(email.lower().strip())
-    if entry is None or entry[0] != password:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={
-                "error": {
-                    "code": "invalid_credentials",
-                    "message": "Invalid demo credentials",
-                    "details": None,
-                }
-            },
-        )
-    return entry[1]
+def verify_password(password: str, password_hash: str) -> bool:
+    try:
+        scheme, salt, expected = password_hash.split("$", 2)
+    except ValueError:
+        return False
+    if scheme != "pbkdf2_sha256":
+        return False
+    digest = hashlib.pbkdf2_hmac(
+        "sha256", password.encode("utf-8"), salt.encode("utf-8"), 120_000
+    )
+    return hmac.compare_digest(digest.hex(), expected)
+
+
+def make_demo_token(email: str) -> str:
+    return f"demo:{email.strip().lower()}"
+
+
+def parse_demo_token(token: str) -> str | None:
+    if not token.startswith("demo:"):
+        return None
+    email = token.removeprefix("demo:").strip().lower()
+    return email or None

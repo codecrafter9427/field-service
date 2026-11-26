@@ -1,9 +1,11 @@
-"""Shared model mixins (stubs)."""
+"""Shared model mixins for Field Service entities."""
+
+from __future__ import annotations
 
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, func
+from sqlalchemy import DateTime, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -29,8 +31,24 @@ class UUIDPrimaryKeyMixin:
 
 
 class OrganizationScopedMixin:
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
 
-# Re-export Base for Alembic discovery later
-__all__ = ["Base", "TimestampMixin", "UUIDPrimaryKeyMixin", "OrganizationScopedMixin"]
+class SoftArchiveMixin:
+    archived_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
+
+
+__all__ = [
+    "Base",
+    "TimestampMixin",
+    "UUIDPrimaryKeyMixin",
+    "OrganizationScopedMixin",
+    "SoftArchiveMixin",
+]

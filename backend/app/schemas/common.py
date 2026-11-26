@@ -1,6 +1,7 @@
 """Shared request/response shapes."""
 
 from typing import Any, Generic, TypeVar
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -20,7 +21,7 @@ class ErrorResponse(BaseModel):
 class ComingSoonResponse(BaseModel):
     status: str = "coming_soon"
     feature: str
-    message: str = "This endpoint is not implemented in the scaffold yet."
+    message: str = "This endpoint is not implemented in Milestone 1 yet."
 
 
 class PageMeta(BaseModel):
@@ -32,17 +33,6 @@ class PageMeta(BaseModel):
 class Page(BaseModel, Generic[T]):
     items: list[T] = Field(default_factory=list)
     meta: PageMeta = Field(default_factory=PageMeta)
-
-
-class DemoLoginRequest(BaseModel):
-    email: str
-    password: str
-
-
-class DemoLoginResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user: dict[str, str]
 
 
 class AIRequest(BaseModel):
@@ -62,3 +52,20 @@ class AIResponse(BaseModel):
     explanation: str
     sources: list[AISource] = Field(default_factory=list)
     requires_confirmation: bool = True
+
+
+class CustomerSummary(BaseModel):
+    id: UUID
+    organization_id: UUID
+    name: str
+    email: str | None = None
+    phone: str | None = None
+
+
+class WorkOrderSummary(BaseModel):
+    id: UUID
+    organization_id: UUID
+    title: str
+    status: str
+    priority: str
+    customer_id: UUID

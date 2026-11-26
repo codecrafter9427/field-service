@@ -12,9 +12,9 @@ Scheduling, dispatch, and job execution for maintenance, repair, and installatio
 | --- | --- |
 | Admin / Dispatcher | Customers, schedule, assignment, reports, settings |
 | Technician | Assigned jobs, checklists, notes, parts, signoff |
-| Customer (optional) | Read-only job-status link (backlog) |
+| Customer (optional) | Read-only job-status link (backlog M4) |
 
-## Entities (planned)
+## Entities (implemented in M1 schema)
 
 Organization, User, Customer, ServiceLocation, Asset, WorkOrder, WorkOrderAssignment, Checklist, ChecklistItem, JobActivity, TimeEntry, PartUsed, Attachment, CustomerSignoff, AuditEvent.
 
@@ -26,13 +26,13 @@ Draft → Scheduled → En Route → In Progress → Waiting for Parts → Compl
 
 ## API groups
 
-| Group | Prefix | Skeleton status |
+| Group | Prefix | Status |
 | --- | --- | --- |
-| Auth (demo) | `/api/v1/auth` | Placeholder login |
-| Customers | `/api/v1/customers` | Coming Soon stub |
+| Auth (demo) | `/api/v1/auth` | Demo login + `/me` (DB-backed, org-scoped) |
+| Customers | `/api/v1/customers` | M1 org-scoped list; full CRUD → M2 |
 | Service locations | `/api/v1/service-locations` | Coming Soon stub |
 | Assets | `/api/v1/assets` | Coming Soon stub |
-| Work orders | `/api/v1/work-orders` | Coming Soon stub |
+| Work orders | `/api/v1/work-orders` | M1 org-scoped list; full CRUD → M2 |
 | Schedule | `/api/v1/schedule` | Coming Soon stub |
 | Assignments | `/api/v1/assignments` | Coming Soon stub |
 | Checklists | `/api/v1/checklists` | Coming Soon stub |
@@ -44,7 +44,7 @@ Draft → Scheduled → En Route → In Progress → Waiting for Parts → Compl
 | AI job prep | `/api/v1/ai/job-prep` | Provider stub |
 | Health | `/health` | Implemented |
 
-Shared conventions: REST JSON, pagination/search/sort on lists, error shape `{error:{code,message,details}}`, tenant authorization on every business endpoint (to be enforced when CRUD lands).
+Shared conventions: REST JSON, pagination/search/sort on lists, error shape `{error:{code,message,details}}`, tenant authorization on every business endpoint.
 
 ## Web baseline (target)
 
@@ -56,7 +56,7 @@ Shared conventions: REST JSON, pagination/search/sort on lists, error shape `{er
 - Estimate/quote fields; printable browser service report
 - Reports by status/technician
 
-**Skeleton:** demo login + Coming Soon for customers, work orders, schedule, assets, reports.
+**M1:** demo login works; customers/work-orders list APIs org-scoped; UI feature routes still Coming Soon until M2.
 
 ## Mobile baseline (target)
 
@@ -66,7 +66,7 @@ Shared conventions: REST JSON, pagination/search/sort on lists, error shape `{er
 - Customer signature as acknowledgement (not certified e-sign)
 - Offline drafts with conflict-aware sync
 
-**Skeleton:** KMP shared agenda stubs + Android app shell. No offline/signature/AI yet.
+**M1:** KMP shell only — mobile run can wait.
 
 ## AI (target)
 
@@ -77,9 +77,20 @@ Shared conventions: REST JSON, pagination/search/sort on lists, error shape `{er
 
 ## Differentiator — Service Memory
 
-Search recurring failures by asset/customer. AI summarizes repeated issues and suggests maintenance follow-up from **recorded history** only. Show sources; require human confirmation before creating follow-up work. Not implemented in this scaffold (backlog + stub endpoint reserved).
+Search recurring failures by asset/customer. AI summarizes repeated issues and suggests maintenance follow-up from **recorded history** only. Show sources; require human confirmation before creating follow-up work. Seeded job history supports later demos (M3).
 
-## Acceptance criteria (MVP vertical slice — when implemented)
+## Acceptance criteria
+
+### Milestone 1 (done when)
+
+1. Local Postgres via Docker Compose; `.env.example` documented
+2. Alembic migrations apply cleanly
+3. Seed creates ≥12 customers, 15 assets, 20 jobs, 5 technicians + history
+4. Demo login works for ≥2 roles; tokens are org-scoped
+5. `/health` OK; auth + tenant smoke tests pass
+6. No paid APIs required
+
+### Full MVP vertical slice (later milestones)
 
 1. Dispatcher-created job appears in technician agenda (same backend)
 2. Offline notes/checklist/status sync with visible conflict handling
@@ -87,21 +98,32 @@ Search recurring failures by asset/customer. AI summarizes repeated issues and s
 4. Service report prints from saved data (browser print)
 5. Signoff records timestamp; labeled acknowledgement only
 6. AI report is edited/approved before final attachment
-7. Demo login works; seed includes ~12 customers, 15 assets, 20 jobs, 5 technicians
-8. No paid APIs required; Ollama optional; DemoAIProvider always works
+7. Service Memory visible with sources
+8. DemoAIProvider always works; Ollama optional
 
-## Backlog (explicitly not in scaffold)
+## Backlog by milestone
 
-- [ ] SQLAlchemy models + Alembic migrations
-- [ ] Seed script with fictional demo dataset
-- [ ] Full CRUD + tenant auth tests
+### M2 — Core CRUD + primary workflow
+
+- [ ] Full CRUD customers / locations / assets / work orders
 - [ ] Dispatch board + overlap detection
+- [ ] Technician agenda (web + Android) from assignments
+- [ ] Status transitions, checklist, notes, time, parts APIs
+- [ ] Attachment upload adapter
+- [ ] Printable service report
+
+### M3 — AI + Service Memory
+
+- [ ] Real Ollama generation path beyond stub
+- [ ] Editable AI service report + job prep
+- [ ] Service Memory search + summarize UI
+- [ ] Checklist suggestions by job type (confirm-only)
+
+### M4 — Polish
+
 - [ ] Offline sync queue (UUID ops, retry, conflict UI)
 - [ ] Signature capture UI
-- [ ] Attachment upload adapter
-- [ ] Real Ollama generation path beyond stub
-- [ ] Service Memory search + summarize UI
-- [ ] Printable service report
-- [ ] iOS UI layer
 - [ ] Customer job-status link
-- [ ] E2E / scripted demo
+- [ ] iOS UI layer
+- [ ] E2E / scripted demo recording
+- [ ] Expanded lint/format/type gates

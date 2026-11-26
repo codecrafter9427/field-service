@@ -1,4 +1,4 @@
-"""SQLAlchemy engine/session stubs — models land in a later milestone."""
+"""SQLAlchemy engine and session factory."""
 
 from collections.abc import Generator
 
@@ -12,7 +12,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class Base(DeclarativeBase):
-    """Declarative base for Field Service models (not yet defined)."""
+    """Declarative base for Field Service models."""
 
 
 def get_db() -> Generator[Session, None, None]:

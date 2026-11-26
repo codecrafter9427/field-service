@@ -58,7 +58,8 @@ export default function LoginPage() {
           {loading ? "Signing in…" : "Sign in"}
         </button>
         <p className="hint">
-          Demo: dispatcher@demo.local / demo · tech@demo.local / demo
+          Demo: dispatcher@demo.local / demo · tech@demo.local / demo ·
+          admin@demo.local / demo
         </p>
       </form>
     </div>

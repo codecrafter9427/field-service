@@ -1,4 +1,4 @@
-"""Alembic environment — placeholder until models exist."""
+"""Alembic environment — loads Field Service model metadata."""
 
 from logging.config import fileConfig
 
@@ -7,9 +7,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import settings
 from app.core.database import Base
-
-# Import model modules here when they exist so metadata is populated.
-# from app.models import ...  # noqa: F401
+import app.models  # noqa: F401 — register metadata
 
 config = context.config
 if config.config_file_name is not None:
