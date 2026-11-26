@@ -1,4 +1,4 @@
-"""FastAPI application entrypoint — Field Service Milestone 1."""
+"""FastAPI application entrypoint — Field Service Milestone 2."""
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,10 +8,11 @@ from app.core.config import settings
 
 app = FastAPI(
     title="Field Service API",
-    version="0.1.0",
+    version="0.2.0",
     description=(
-        "Portfolio MVP Milestone 1 — auth, org-scoped seed data, health. "
-        "Full scheduling/offline/signature/AI reports are later milestones."
+        "Portfolio MVP Milestone 2 — customers/locations/work-order CRUD, "
+        "assignments, schedule overlap warnings, notes/checklist/time APIs. "
+        "Offline sync, signature capture, and AI reports are later milestones."
     ),
 )
 
@@ -26,7 +27,7 @@ app.add_middleware(
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "service": "field-service", "milestone": "1"}
+    return {"status": "ok", "service": "field-service", "milestone": "2"}
 
 
 app.include_router(api_router, prefix="/api/v1")

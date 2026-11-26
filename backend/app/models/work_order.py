@@ -73,6 +73,12 @@ class WorkOrder(
         String(20), nullable=False, default=WorkOrderPriority.NORMAL.value
     )
     due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    scheduled_start: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
+    scheduled_end: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     skill_required: Mapped[str | None] = mapped_column(String(100), nullable=True)
     estimate_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     labor_rate: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)

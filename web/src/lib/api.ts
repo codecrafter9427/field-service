@@ -13,6 +13,134 @@ export type DemoLoginResult = {
   };
 };
 
+export type Page<T> = {
+  items: T[];
+  meta: { page: number; page_size: number; total: number };
+};
+
+export type Customer = {
+  id: string;
+  organization_id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  notes: string | null;
+};
+
+export type ServiceLocation = {
+  id: string;
+  organization_id: string;
+  customer_id: string;
+  name: string;
+  address_line1: string;
+  city: string;
+  region: string | null;
+  postal_code: string | null;
+  country: string;
+};
+
+export type WorkOrder = {
+  id: string;
+  organization_id: string;
+  customer_id: string;
+  service_location_id: string | null;
+  title: string;
+  description: string | null;
+  status: string;
+  priority: string;
+  due_at: string | null;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
+  technician_id: string | null;
+  technician_name: string | null;
+  overlap_warning: boolean;
+  overlapping_work_order_ids: string[];
+};
+
+export type Technician = {
+  id: string;
+  display_name: string;
+  email: string;
+  skills: string | null;
+};
+
+export type ScheduleItem = {
+  work_order_id: string;
+  title: string;
+  status: string;
+  priority: string;
+  customer_id: string;
+  technician_id: string | null;
+  technician_name: string | null;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
+  due_at: string | null;
+  overlap_warning: boolean;
+  overlapping_work_order_ids: string[];
+};
+
+export type Assignment = {
+  id: string;
+  work_order_id: string;
+  technician_id: string;
+  technician_name: string | null;
+  work_order_title: string | null;
+  work_order_status: string | null;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
+  overlap_warning: boolean;
+};
+
+export type JobActivity = {
+  id: string;
+  work_order_id: string;
+  activity_type: string;
+  note: string | null;
+  occurred_at: string;
+};
+
+export type Checklist = {
+  id: string;
+  work_order_id: string;
+  name: string;
+  items: {
+    id: string;
+    label: string;
+    is_completed: boolean;
+    is_required: boolean;
+  }[];
+};
+
+export type TimeEntry = {
+  id: string;
+  work_order_id: string;
+  technician_id: string;
+  started_at: string;
+  ended_at: string | null;
+  minutes: number | null;
+  notes: string | null;
+};
+
+function authHeaders(token: string): HeadersInit {
+  return {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+}
+
+async function parseError(res: Response): Promise<string> {
+  try {
+    const data = await res.json();
+    return (
+      data?.detail?.error?.message ??
+      data?.error?.message ??
+      `Request failed (${res.status})`
+    );
+  } catch {
+    return `Request failed (${res.status})`;
+  }
+}
+
 export async function demoLogin(
   email: string,
   password: string
@@ -22,15 +150,31 @@ export async function demoLogin(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
-  if (!res.ok) {
-    let message = "Login failed";
-    try {
-      const data = await res.json();
-      message = data?.detail?.error?.message ?? data?.error?.message ?? message;
-    } catch {
-      /* ignore */
-    }
-    throw new Error(message);
-  }
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json();
+}
+
+export async function apiGet<T>(path: string, token: string): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: authHeaders(token),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json();
+}
+
+export async function apiSend<T>(
+  path: string,
+  token: string,
+  method: string,
+  body?: unknown
+): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers: authHeaders(token),
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await parseError(res));
+  if (res.status === 204) return undefined as T;
   return res.json();
 }

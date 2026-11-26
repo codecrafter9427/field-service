@@ -2,12 +2,12 @@
 
 Scheduling, dispatch, and job execution MVP for maintenance, repair, and installation businesses.
 
-Portfolio product (Agent C). **Milestone 1** delivers local Postgres, migrations, org-scoped demo auth, and seeded fictional data. Full scheduling, offline sync, signature capture, and real AI report generation are **not** implemented yet (see backlog).
+Portfolio product (Agent C). **Milestone 2** delivers customers/locations/work-order CRUD, technician assignment, schedule overlap warnings, and dispatcher web workflow (notes / checklist / time). Offline sync, signature capture, printable polish, and AI service reports remain later milestones.
 
 ## Purpose
 
-- Dispatcher web: customers, work orders, schedule board, assets, service reports (CRUD/board → M2)
-- Technician mobile (Android first via KMP): agenda, job status, checklist (→ M2+)
+- Dispatcher web: customers, work orders, schedule board with overlap warnings, job notes/checklist/time
+- Technician agenda API (same backend); Android run can wait
 - Differentiator target: **Service Memory** — recurring failure search/summary (→ M3)
 
 ## Stack
@@ -27,7 +27,7 @@ Portfolio product (Agent C). **Milestone 1** delivers local Postgres, migrations
 - Docker Desktop
 - Python 3.11+
 - Node.js 20+
-- Android Studio / JDK 17 (mobile; optional for M1)
+- Android Studio / JDK 17 (mobile; optional for M2)
 - Optional: [Ollama](https://ollama.com) with a local open model
 
 ### 1. Environment
@@ -58,7 +58,7 @@ python -m scripts.seed
 uvicorn app.main:app --reload --port 8003
 ```
 
-Health: `GET http://localhost:8003/health`  
+Health: `GET http://localhost:8003/health` → `milestone: "2"`  
 OpenAPI: `http://localhost:8003/docs`
 
 ### 4. Web
@@ -69,9 +69,9 @@ npm install
 npm run dev -- --port 3003
 ```
 
-Open `http://localhost:3003` — demo login works against seeded users. Feature routes still show **Coming Soon** for full CRUD/dispatch (M2).
+Open `http://localhost:3003` — demo login works. Dispatcher can create customers/locations/jobs, assign technicians, and see schedule overlap warnings.
 
-### 5. Mobile (Android) — optional for M1
+### 5. Mobile (Android) — optional / deferred for M2
 
 ```bash
 cd mobile
@@ -79,7 +79,7 @@ cd mobile
 ./gradlew :androidApp:assembleDebug
 ```
 
-Shared KMP module exposes agenda stubs; Android app shell shows technician agenda placeholder. iOS UI is deferred.
+Shared KMP module still exposes agenda stubs; wire to `/assignments/agenda` in a later mobile pass.
 
 ## Tests
 
@@ -89,7 +89,7 @@ cd backend
 pytest -q
 ```
 
-Smoke coverage: `/health`, demo login (≥2 roles), org-scoped customers/work-orders tenant isolation.
+Coverage: `/health`, demo login, tenant isolation, customer/location/work-order CRUD isolation, schedule overlap warnings, agenda visibility for dispatcher-created jobs.
 
 ## AI
 
@@ -110,28 +110,29 @@ All passwords: `demo` (fictional data only).
 | Technician | tech2@demo.local … tech5@demo.local | demo |
 | Other tenant (isolation) | other@demo.local | demo |
 
-### Demo steps (Milestone 1)
+### Demo steps (Milestone 2)
 
 1. `docker compose up -d` → `alembic upgrade head` → `python -m scripts.seed`
-2. Start API on port 8003; confirm `GET /health` → `{"status":"ok",...}`
+2. Start API on port 8003; confirm `GET /health` → `{"status":"ok","milestone":"2",...}`
 3. `POST /api/v1/auth/demo-login` with `dispatcher@demo.local` / `demo`
-4. `GET /api/v1/customers` with `Authorization: Bearer <token>` → 12 customers
-5. Login as `other@demo.local` → customers list shows only the other-tenant row
-6. `GET /api/v1/work-orders` as tech → 20 jobs for the demo org
-7. Web login at `http://localhost:3003/login` with the same credentials
+4. Create a work order with `scheduled_start` / `scheduled_end` and `technician_id` for Terry Technician
+5. Create a second overlapping job for the same technician → response includes `overlap_warning: true`
+6. `GET /api/v1/assignments/agenda` as `tech@demo.local` → new job is visible
+7. `GET /api/v1/schedule` → overlapping rows flagged
+8. Web: login at `http://localhost:3003/login` → Work Orders → create/assign → Schedule shows warnings
 
 ## Seed contents
 
 - 12 customers + service locations
 - 15 assets
-- 20 work orders across statuses with assignments
+- 20 work orders across statuses with assignments and scheduled windows
 - 5 technicians (+ admin + dispatcher)
 - Checklist stubs, job activity history, time entries, parts used, attachment metadata, signoffs, audit events
 - Second org (`other@demo.local`) for tenant isolation tests
 
 ## Milestones / backlog
 
-### M1 — Foundation (this milestone)
+### M1 — Foundation
 
 - [x] `.env.example` + Docker Compose Postgres
 - [x] SQLAlchemy models for core entities
@@ -141,14 +142,17 @@ All passwords: `demo` (fictional data only).
 - [x] `/health` + auth/tenant smoke tests
 - [x] README + backlog
 
-### M2 — Core workflow
+### M2 — Core workflow (this milestone)
 
-- [ ] Full CRUD for customers, locations, assets, work orders
-- [ ] Dispatch board + assignment/reassignment + overlap warnings
-- [ ] Technician agenda (web + KMP Android) from same backend
-- [ ] Status transitions, checklist completion, notes, time entries, parts
-- [ ] Attachment upload adapter (metadata already in schema)
-- [ ] Printable service report (browser print)
+- [x] Full CRUD for customers, service locations, work orders
+- [x] Assign / reassign technician + schedule list with overlap warnings
+- [x] Technician agenda API (`/assignments/agenda`)
+- [x] Status transitions, checklist completion, notes, time entries
+- [x] Org-scoped auth on business endpoints + overlap/tenant tests
+- [x] Dispatcher web views (customers, work orders, schedule)
+- [ ] Attachment upload adapter (metadata already in schema) — deferred polish
+- [ ] Printable service report — deferred
+- [ ] Android agenda UI run — deferred
 
 ### M3 — AI + differentiator
 
@@ -168,21 +172,27 @@ All passwords: `demo` (fictional data only).
 
 ## Limitations (current)
 
-- No full scheduling / overlap warnings
 - No offline sync queue
 - No signature capture UI (seeded signoff rows only)
+- No printable service-report polish
 - No real AI report generation (stubs only)
+- Assets / parts / attachments / reports still Coming Soon or metadata-only
 - Auth is demo bearer tokens — not production-secure
-- Mobile run can wait; web Coming Soon for most feature pages
+- Mobile Android run deferred; agenda available via API
 - Prototype security: local demo secrets in `.env` only
 
 ## API groups
 
-| Group | Prefix | M1 status |
+| Group | Prefix | M2 status |
 | --- | --- | --- |
 | Auth | `/api/v1/auth` | Demo login + `/me` |
-| Customers | `/api/v1/customers` | Org-scoped list |
-| Work orders | `/api/v1/work-orders` | Org-scoped list |
-| Service locations / assets / schedule / assignments / checklists / time / parts / attachments / reports / AI | `/api/v1/*` | Coming Soon stubs |
+| Customers | `/api/v1/customers` | Full CRUD (archive delete) |
+| Service locations | `/api/v1/service-locations` | Full CRUD |
+| Work orders | `/api/v1/work-orders` | CRUD + assign + notes + activities |
+| Schedule | `/api/v1/schedule` | List + overlap warnings |
+| Assignments | `/api/v1/assignments` | Create, list, technicians, agenda |
+| Checklists | `/api/v1/checklists` | Create + item complete |
+| Time entries | `/api/v1/time-entries` | Create + update |
+| Assets / parts / attachments / reports / AI | `/api/v1/*` | Coming Soon stubs |
 
-Shared conventions: REST JSON, pagination on lists, error shape `{error:{code,message,details}}`, tenant authorization on business endpoints.
+Shared conventions: REST JSON, pagination on lists, error shape `{error:{code,message,details}}`, tenant authorization on business endpoints. Overlap is a **warning** (assignment still succeeds) when the same technician has overlapping `scheduled_start`/`scheduled_end` windows.

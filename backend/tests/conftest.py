@@ -10,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 from app.core.database import get_db
 from app.main import app
+from scripts.seed import seed
 
 
 @pytest.fixture(scope="session")
@@ -20,6 +21,8 @@ def db_engine():
             conn.execute(text("SELECT 1"))
     except Exception as exc:  # pragma: no cover - environment gate
         pytest.skip(f"Database unavailable for smoke tests: {exc}")
+    # Reset demo data so mutating M2 tests see a clean seed baseline
+    seed()
     return engine
 
 

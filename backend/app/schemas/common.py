@@ -21,7 +21,7 @@ class ErrorResponse(BaseModel):
 class ComingSoonResponse(BaseModel):
     status: str = "coming_soon"
     feature: str
-    message: str = "This endpoint is not implemented in Milestone 1 yet."
+    message: str = "This endpoint is not implemented in the current milestone yet."
 
 
 class PageMeta(BaseModel):

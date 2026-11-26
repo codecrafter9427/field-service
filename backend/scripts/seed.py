@@ -295,6 +295,12 @@ def seed() -> None:
             asset = assets[i % len(assets)]
             cust = next(c for c in customers if c.id == asset.customer_id)
             loc = next(loc for loc in locations if loc.customer_id == cust.id)
+            due_at = now + timedelta(days=(i % 7) - 2, hours=9)
+            # Spread windows so seed data does not flood overlap warnings
+            scheduled_start = due_at.replace(minute=0, second=0, microsecond=0) + timedelta(
+                hours=(i % 5)
+            )
+            scheduled_end = scheduled_start + timedelta(hours=2)
             wo = WorkOrder(
                 id=uuid.uuid5(DEMO_ORG_ID, f"wo-{i}"),
                 organization_id=DEMO_ORG_ID,
@@ -305,7 +311,9 @@ def seed() -> None:
                 description=f"Demo work order #{i + 1}: {title}",
                 status=statuses[i].value,
                 priority=priorities[i % len(priorities)].value,
-                due_at=now + timedelta(days=(i % 7) - 2),
+                due_at=due_at,
+                scheduled_start=scheduled_start,
+                scheduled_end=scheduled_end,
                 skill_required=technicians[i % 5].skills,
                 estimate_amount=Decimal("150.00") + Decimal(i * 25),
                 labor_rate=Decimal("95.00"),

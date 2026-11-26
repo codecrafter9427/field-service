@@ -1,6 +1,6 @@
 # Field Service — MVP Spec
 
-Skeleton-aligned specification for the portfolio MVP. Full production coverage is out of scope for the first vertical slice.
+Skeleton-aligned specification for the portfolio MVP. Full production coverage is out of scope for the first vertical slices.
 
 ## Purpose
 
@@ -14,9 +14,9 @@ Scheduling, dispatch, and job execution for maintenance, repair, and installatio
 | Technician | Assigned jobs, checklists, notes, parts, signoff |
 | Customer (optional) | Read-only job-status link (backlog M4) |
 
-## Entities (implemented in M1 schema)
+## Entities (schema)
 
-Organization, User, Customer, ServiceLocation, Asset, WorkOrder, WorkOrderAssignment, Checklist, ChecklistItem, JobActivity, TimeEntry, PartUsed, Attachment, CustomerSignoff, AuditEvent.
+Organization, User, Customer, ServiceLocation, Asset, WorkOrder (+ `scheduled_start` / `scheduled_end`), WorkOrderAssignment, Checklist, ChecklistItem, JobActivity, TimeEntry, PartUsed, Attachment, CustomerSignoff, AuditEvent.
 
 UUID primary keys, UTC timestamps, organization-scoped rows, archive preferred over hard-delete.
 
@@ -29,44 +29,36 @@ Draft → Scheduled → En Route → In Progress → Waiting for Parts → Compl
 | Group | Prefix | Status |
 | --- | --- | --- |
 | Auth (demo) | `/api/v1/auth` | Demo login + `/me` (DB-backed, org-scoped) |
-| Customers | `/api/v1/customers` | M1 org-scoped list; full CRUD → M2 |
-| Service locations | `/api/v1/service-locations` | Coming Soon stub |
+| Customers | `/api/v1/customers` | Full CRUD |
+| Service locations | `/api/v1/service-locations` | Full CRUD |
 | Assets | `/api/v1/assets` | Coming Soon stub |
-| Work orders | `/api/v1/work-orders` | M1 org-scoped list; full CRUD → M2 |
-| Schedule | `/api/v1/schedule` | Coming Soon stub |
-| Assignments | `/api/v1/assignments` | Coming Soon stub |
-| Checklists | `/api/v1/checklists` | Coming Soon stub |
-| Time entries | `/api/v1/time-entries` | Coming Soon stub |
+| Work orders | `/api/v1/work-orders` | Full CRUD + assign + notes + activities |
+| Schedule | `/api/v1/schedule` | List with overlap warnings |
+| Assignments | `/api/v1/assignments` | Create/list/technicians/agenda |
+| Checklists | `/api/v1/checklists` | Create + item patch |
+| Time entries | `/api/v1/time-entries` | Create + update |
 | Parts used | `/api/v1/parts-used` | Coming Soon stub |
 | Attachments | `/api/v1/attachments` | Coming Soon stub |
 | Reports | `/api/v1/reports/service` | Coming Soon stub |
 | AI service report | `/api/v1/ai/service-report` | Provider stub |
 | AI job prep | `/api/v1/ai/job-prep` | Provider stub |
-| Health | `/health` | Implemented |
+| Health | `/health` | Implemented (milestone 2) |
 
 Shared conventions: REST JSON, pagination/search/sort on lists, error shape `{error:{code,message,details}}`, tenant authorization on every business endpoint.
 
-## Web baseline (target)
+Overlap rule: when assigning or creating with a technician and both jobs have `scheduled_start`/`scheduled_end`, the API **warns** (`overlap_warning` + overlapping IDs) if intervals overlap for the same technician. Cancelled jobs are excluded. Assignment is not blocked.
 
-- Dashboard: jobs today, unassigned/overdue, completion rate
-- Customer + service-location directory
-- Work orders with checklist, parts, labor, attachments metadata
-- Calendar / dispatch board with overlap warnings
-- Asset register + service history
-- Estimate/quote fields; printable browser service report
-- Reports by status/technician
+## Web baseline
 
-**M1:** demo login works; customers/work-orders list APIs org-scoped; UI feature routes still Coming Soon until M2.
+**M2 implemented:** dashboard snapshot, customer + location directory, work-order create/assign/status, notes/checklist/time panels, schedule list with overlap badges.
 
-## Mobile baseline (target)
+Still later: asset register UI, printable service report polish, full calendar board chrome, parts UI.
 
-- Technician agenda and assigned jobs
-- Status transitions; checklist; notes; time tracking
-- Local photo capture; voice note with platform speech fallback
-- Customer signature as acknowledgement (not certified e-sign)
-- Offline drafts with conflict-aware sync
+## Mobile baseline
 
-**M1:** KMP shell only — mobile run can wait.
+- Technician agenda API ready (`GET /assignments/agenda`)
+- Android UI run deferred for M2
+- Offline drafts / signature capture → M4
 
 ## AI (target)
 
@@ -81,7 +73,7 @@ Search recurring failures by asset/customer. AI summarizes repeated issues and s
 
 ## Acceptance criteria
 
-### Milestone 1 (done when)
+### Milestone 1 (done)
 
 1. Local Postgres via Docker Compose; `.env.example` documented
 2. Alembic migrations apply cleanly
@@ -90,27 +82,37 @@ Search recurring failures by asset/customer. AI summarizes repeated issues and s
 5. `/health` OK; auth + tenant smoke tests pass
 6. No paid APIs required
 
+### Milestone 2 (done when)
+
+1. Customers + service locations CRUD (org-scoped)
+2. Work orders CRUD with statuses; assign technician
+3. Schedule/list warns on overlapping jobs for same technician (server-side)
+4. Job notes / checklist / time entry basic APIs + dispatcher web views
+5. API tests cover overlap warning + tenant isolation
+6. README demo: dispatcher creates job → visible in assignments/agenda API
+
 ### Full MVP vertical slice (later milestones)
 
-1. Dispatcher-created job appears in technician agenda (same backend)
-2. Offline notes/checklist/status sync with visible conflict handling
-3. Schedule warns on overlapping assignments
-4. Service report prints from saved data (browser print)
-5. Signoff records timestamp; labeled acknowledgement only
-6. AI report is edited/approved before final attachment
-7. Service Memory visible with sources
-8. DemoAIProvider always works; Ollama optional
+1. Offline notes/checklist/status sync with visible conflict handling
+2. Service report prints from saved data (browser print)
+3. Signoff records timestamp; labeled acknowledgement only
+4. AI report is edited/approved before final attachment
+5. Service Memory visible with sources
+6. DemoAIProvider always works; Ollama optional
+7. Android technician agenda wired to live API
 
 ## Backlog by milestone
 
 ### M2 — Core CRUD + primary workflow
 
-- [ ] Full CRUD customers / locations / assets / work orders
-- [ ] Dispatch board + overlap detection
-- [ ] Technician agenda (web + Android) from assignments
-- [ ] Status transitions, checklist, notes, time, parts APIs
+- [x] Full CRUD customers / locations / work orders
+- [x] Dispatch list + overlap detection
+- [x] Technician agenda API from assignments
+- [x] Status transitions, checklist, notes, time APIs + web views
 - [ ] Attachment upload adapter
 - [ ] Printable service report
+- [ ] Assets CRUD (API stub remains)
+- [ ] Android agenda UI
 
 ### M3 — AI + Service Memory
 
