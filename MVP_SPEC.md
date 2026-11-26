@@ -31,7 +31,7 @@ Draft → Scheduled → En Route → In Progress → Waiting for Parts → Compl
 | Auth (demo) | `/api/v1/auth` | Demo login + `/me` (DB-backed, org-scoped) |
 | Customers | `/api/v1/customers` | Full CRUD |
 | Service locations | `/api/v1/service-locations` | Full CRUD |
-| Assets | `/api/v1/assets` | Coming Soon stub |
+| Assets | `/api/v1/assets` | Read list/detail (write CRUD later) |
 | Work orders | `/api/v1/work-orders` | Full CRUD + assign + notes + activities |
 | Schedule | `/api/v1/schedule` | List with overlap warnings |
 | Assignments | `/api/v1/assignments` | Create/list/technicians/agenda |
@@ -40,9 +40,10 @@ Draft → Scheduled → En Route → In Progress → Waiting for Parts → Compl
 | Parts used | `/api/v1/parts-used` | Coming Soon stub |
 | Attachments | `/api/v1/attachments` | Coming Soon stub |
 | Reports | `/api/v1/reports/service` | Coming Soon stub |
-| AI service report | `/api/v1/ai/service-report` | Provider stub |
-| AI job prep | `/api/v1/ai/job-prep` | Provider stub |
-| Health | `/health` | Implemented (milestone 2) |
+| AI service report | `/api/v1/ai/service-report` | Draft + approve (human edit required) |
+| AI job prep | `/api/v1/ai/job-prep` | History summary + confirm checklist |
+| AI Service Memory | `/api/v1/ai/service-memory` | Recurring-failure search + summarize |
+| Health | `/health` | Implemented (milestone 3) |
 
 Shared conventions: REST JSON, pagination/search/sort on lists, error shape `{error:{code,message,details}}`, tenant authorization on every business endpoint.
 
@@ -50,26 +51,29 @@ Overlap rule: when assigning or creating with a technician and both jobs have `s
 
 ## Web baseline
 
-**M2 implemented:** dashboard snapshot, customer + location directory, work-order create/assign/status, notes/checklist/time panels, schedule list with overlap badges.
+**M2:** dashboard snapshot, customer + location directory, work-order create/assign/status, notes/checklist/time panels, schedule list with overlap badges.
 
-Still later: asset register UI, printable service report polish, full calendar board chrome, parts UI.
+**M3:** AI Assist page — service report draft/approve, job prep + checklist confirm, Service Memory search UI; assets read list.
+
+Still later: asset write CRUD, printable service report polish, full calendar board chrome, parts UI.
 
 ## Mobile baseline
 
 - Technician agenda API ready (`GET /assignments/agenda`)
-- Android UI run deferred for M2
+- Android UI run deferred
 - Offline drafts / signature capture → M4
 
-## AI (target)
+## AI (M3)
 
 - Structured editable service report from notes/transcript
 - Job prep summary from asset history/checklist
 - Checklist suggestions by job type (technician confirms)
 - Rules: backend-only; DemoAIProvider if Ollama absent; never complete job / certify safety / sign for customer
+- Optional Ollama adapter with demo fallback
 
 ## Differentiator — Service Memory
 
-Search recurring failures by asset/customer. AI summarizes repeated issues and suggests maintenance follow-up from **recorded history** only. Show sources; require human confirmation before creating follow-up work. Seeded job history supports later demos (M3).
+Search recurring failures by asset/customer. AI summarizes repeated issues and suggests maintenance follow-up from **recorded history** only. Show sources; require human confirmation before creating follow-up work. Seeded job history includes filter/leak themes for demos.
 
 ## Acceptance criteria
 
@@ -82,7 +86,7 @@ Search recurring failures by asset/customer. AI summarizes repeated issues and s
 5. `/health` OK; auth + tenant smoke tests pass
 6. No paid APIs required
 
-### Milestone 2 (done when)
+### Milestone 2 (done)
 
 1. Customers + service locations CRUD (org-scoped)
 2. Work orders CRUD with statuses; assign technician
@@ -91,15 +95,22 @@ Search recurring failures by asset/customer. AI summarizes repeated issues and s
 5. API tests cover overlap warning + tenant isolation
 6. README demo: dispatcher creates job → visible in assignments/agenda API
 
+### Milestone 3 (done when)
+
+1. AIProvider + DemoAIProvider + optional Ollama adapter (demo fallback)
+2. Service report draft editable; approve stores metadata without completing/signing
+3. Job prep from history/checklist; suggestions require confirm
+4. Service Memory search + AI summary with sources
+5. Web UI for report, job prep, Service Memory
+6. Tests for demo AI, Service Memory retrieval, AI auth
+7. README documents AI setup without Ollama
+
 ### Full MVP vertical slice (later milestones)
 
 1. Offline notes/checklist/status sync with visible conflict handling
 2. Service report prints from saved data (browser print)
 3. Signoff records timestamp; labeled acknowledgement only
-4. AI report is edited/approved before final attachment
-5. Service Memory visible with sources
-6. DemoAIProvider always works; Ollama optional
-7. Android technician agenda wired to live API
+4. Android technician agenda wired to live API
 
 ## Backlog by milestone
 
@@ -111,15 +122,15 @@ Search recurring failures by asset/customer. AI summarizes repeated issues and s
 - [x] Status transitions, checklist, notes, time APIs + web views
 - [ ] Attachment upload adapter
 - [ ] Printable service report
-- [ ] Assets CRUD (API stub remains)
+- [ ] Assets write CRUD
 - [ ] Android agenda UI
 
 ### M3 — AI + Service Memory
 
-- [ ] Real Ollama generation path beyond stub
-- [ ] Editable AI service report + job prep
-- [ ] Service Memory search + summarize UI
-- [ ] Checklist suggestions by job type (confirm-only)
+- [x] Real Ollama generation path with demo fallback
+- [x] Editable AI service report + job prep
+- [x] Service Memory search + summarize UI
+- [x] Checklist suggestions by job type (confirm-only)
 
 ### M4 — Polish
 

@@ -121,6 +121,71 @@ export type TimeEntry = {
   notes: string | null;
 };
 
+export type Asset = {
+  id: string;
+  organization_id: string;
+  customer_id: string;
+  name: string;
+  serial_number: string | null;
+  asset_type: string | null;
+  maintenance_notes: string | null;
+};
+
+export type AISource = {
+  type: string;
+  id: string;
+  label: string;
+};
+
+export type ServiceReportDraft = {
+  work_order_id: string;
+  draft: {
+    problem: string;
+    diagnosis: string;
+    work_performed: string;
+    parts: string[];
+    follow_up: string;
+  };
+  explanation: string;
+  sources: AISource[];
+  requires_confirmation: boolean;
+  provider: string;
+  ai_cannot: string[];
+};
+
+export type JobPrepResult = {
+  work_order_id: string;
+  summary: string;
+  history_highlights: string[];
+  existing_checklist: string[];
+  suggested_checklist: { label: string; reason: string; confirmed: boolean }[];
+  explanation: string;
+  sources: AISource[];
+  requires_confirmation: boolean;
+  provider: string;
+};
+
+export type ServiceMemoryResult = {
+  query: string;
+  recurring_themes: string[];
+  suggested_follow_up: string;
+  hits: {
+    work_order_id: string;
+    title: string;
+    status: string;
+    customer_id: string;
+    customer_name: string | null;
+    asset_id: string | null;
+    asset_name: string | null;
+    note_excerpt: string | null;
+    occurred_at: string | null;
+  }[];
+  explanation: string;
+  sources: AISource[];
+  requires_confirmation: boolean;
+  provider: string;
+};
+
 function authHeaders(token: string): HeadersInit {
   return {
     Authorization: `Bearer ${token}`,

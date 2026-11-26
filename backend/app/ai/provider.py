@@ -1,4 +1,4 @@
-"""AIProvider interface and factory."""
+"""AIProvider interface and factory — backend-only, no paid APIs."""
 
 from abc import ABC, abstractmethod
 from typing import Any
@@ -7,7 +7,7 @@ from app.core.config import settings
 
 
 class AIProvider(ABC):
-    """Backend-only generative AI interface. No paid APIs."""
+    """Generative AI behind typed tasks. Calculations stay deterministic elsewhere."""
 
     @abstractmethod
     async def generate_structured(
@@ -25,7 +25,10 @@ def get_ai_provider() -> AIProvider:
     if name == "ollama":
         from app.ai.ollama import OllamaAIProvider
 
-        return OllamaAIProvider()
+        return OllamaAIProvider(
+            base_url=settings.ollama_base_url,
+            model=settings.ollama_model,
+        )
     from app.ai.demo import DemoAIProvider
 
     return DemoAIProvider()

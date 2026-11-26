@@ -254,7 +254,10 @@ def seed() -> None:
                     manufacturer=mfr,
                     model_number=model,
                     warranty_expires_on=date(2027, 6, 1) + timedelta(days=idx * 10),
-                    maintenance_notes="Seeded maintenance history for Service Memory demos.",
+                    maintenance_notes=(
+                        "Seeded maintenance history for Service Memory demos. "
+                        "Watch for recurring filter clog and seal/leak patterns."
+                    ),
                 )
             )
         db.add_all(assets)
@@ -362,16 +365,34 @@ def seed() -> None:
                     )
                 )
 
+            # Recurring-failure themes for Service Memory demos (filter clog / leak / seal).
+            asset_ref = assets[i % len(assets)]
+            if asset_ref.asset_type == "HVAC" or "filter" in title.lower() or "HVAC" in title:
+                note_text = (
+                    f"Recurring filter clog on {asset_ref.name}: replaced dirty filter media, "
+                    f"coil airflow restricted; recommend quarterly filter PM."
+                )
+            elif asset_ref.asset_type == "Refrigeration" or "leak" in title.lower() or "cooler" in title.lower():
+                note_text = (
+                    f"Recurring refrigerant leak / gasket seal issue on {asset_ref.name}: "
+                    f"found weep at joint, topped charge temporarily; schedule leak follow-up."
+                )
+            elif "vibration" in title.lower() or "noise" in title.lower():
+                note_text = (
+                    f"Intermittent vibration/noise on {asset_ref.name}; "
+                    f"checked mounts and bearings — monitor for recurrence."
+                )
+            else:
+                note_text = (
+                    f"History note for job {i + 1}: inspected {asset_ref.name}."
+                )
             db.add(
                 JobActivity(
                     organization_id=DEMO_ORG_ID,
                     work_order_id=wo.id,
                     actor_user_id=tech.id,
                     activity_type=JobActivityType.NOTE.value,
-                    note=(
-                        f"History note for job {i + 1}: "
-                        f"inspected {assets[i % len(assets)].name}."
-                    ),
+                    note=note_text,
                     occurred_at=now - timedelta(days=i % 14, hours=2),
                 )
             )

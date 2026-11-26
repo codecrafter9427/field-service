@@ -66,6 +66,7 @@ export default function DashboardPage() {
           <div className="stack">
             <Link href="/work-orders">Create / assign work order</Link>
             <Link href="/schedule">Open schedule board</Link>
+            <Link href="/ai">AI Assist / Service Memory</Link>
             <Link href="/customers">Customer directory</Link>
           </div>
         </div>
