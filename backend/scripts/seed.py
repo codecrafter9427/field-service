@@ -20,7 +20,7 @@ from decimal import Decimal
 from sqlalchemy import delete
 
 from app.core.database import SessionLocal
-from app.core.security import hash_password
+from app.core.security import hash_password, hash_portal_token
 from app.models import (
     Asset,
     Attachment,
@@ -28,6 +28,7 @@ from app.models import (
     Checklist,
     ChecklistItem,
     Customer,
+    CustomerPortalLink,
     CustomerSignoff,
     JobActivity,
     Organization,
@@ -48,6 +49,8 @@ from app.models.enums import (
 DEMO_ORG_ID = uuid.UUID("00000000-0000-4000-8000-000000000010")
 OTHER_ORG_ID = uuid.UUID("00000000-0000-4000-8000-000000000099")
 DEMO_PASSWORD = "demo"
+# Known raw portal token for DEMO.md (hash stored at rest only)
+DEMO_PORTAL_RAW_TOKEN = "demo-portal-status-token-m6-northwind"
 UTC = timezone.utc
 
 
@@ -110,6 +113,9 @@ JOB_TITLES = [
 
 def _clear_org(db, org_id: uuid.UUID) -> None:
     """Remove seeded rows for an org (child tables first)."""
+    db.execute(
+        delete(CustomerPortalLink).where(CustomerPortalLink.organization_id == org_id)
+    )
     db.execute(delete(ChecklistItem).where(ChecklistItem.organization_id == org_id))
     db.execute(delete(Checklist).where(Checklist.organization_id == org_id))
     db.execute(delete(CustomerSignoff).where(CustomerSignoff.organization_id == org_id))
@@ -474,6 +480,26 @@ def seed() -> None:
                 )
             )
 
+        # Seed one active customer portal link on an in-progress HVAC job
+        portal_wo = next(
+            (
+                wo
+                for wo in work_orders
+                if wo.status == WorkOrderStatus.IN_PROGRESS.value
+            ),
+            work_orders[3],
+        )
+        db.add(
+            CustomerPortalLink(
+                id=uuid.uuid5(DEMO_ORG_ID, "portal-link-demo"),
+                organization_id=DEMO_ORG_ID,
+                work_order_id=portal_wo.id,
+                token_hash=hash_portal_token(DEMO_PORTAL_RAW_TOKEN),
+                expires_at=now + timedelta(days=7),
+                created_by_id=dispatcher.id,
+            )
+        )
+
         db.commit()
         print("Field Service seed complete.")
         print(f"  Org: {org.name} ({org.slug})")
@@ -481,6 +507,7 @@ def seed() -> None:
         print(f"  Assets: {len(assets)}")
         print(f"  Work orders: {len(work_orders)}")
         print(f"  Technicians: {len(technicians)}")
+        print(f"  Demo portal status URL path: /status/{DEMO_PORTAL_RAW_TOKEN}")
         print("Demo credentials (password for all: demo):")
         print("  admin@demo.local          (admin)")
         print("  dispatcher@demo.local     (dispatcher)")

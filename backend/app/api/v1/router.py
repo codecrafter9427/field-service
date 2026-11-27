@@ -9,8 +9,10 @@ from app.api.v1 import (
     attachments,
     auth,
     checklists,
+    connectors_insights,
     customers,
     parts_used,
+    portal,
     reports,
     schedule,
     service_locations,
@@ -36,3 +38,5 @@ api_router.include_router(signoffs.router, tags=["signoffs"])
 api_router.include_router(attachments.router, prefix="/attachments", tags=["attachments"])
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
 api_router.include_router(ai.router, prefix="/ai", tags=["ai"])
+api_router.include_router(portal.router, tags=["portal"])
+api_router.include_router(connectors_insights.router)

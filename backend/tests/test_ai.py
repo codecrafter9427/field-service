@@ -289,4 +289,4 @@ def test_health_milestone_4(client: TestClient):
     """AI suite health check; product milestone is now 5."""
     res = client.get("/health")
     assert res.status_code == 200
-    assert res.json()["milestone"] == "5"
+    assert res.json()["milestone"] == "6"

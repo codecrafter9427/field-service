@@ -157,4 +157,4 @@ def test_checklist_item_conflict(client: TestClient, dispatcher_token: str):
 def test_health_milestone_5(client: TestClient):
     res = client.get("/health")
     assert res.status_code == 200
-    assert res.json()["milestone"] == "5"
+    assert res.json()["milestone"] == "6"

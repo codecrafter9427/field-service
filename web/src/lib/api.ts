@@ -332,3 +332,82 @@ export async function apiSend<T>(
   if (res.status === 204) return undefined as T;
   return res.json();
 }
+
+export type PortalLinkCreated = {
+  id: string;
+  work_order_id: string;
+  url_path: string;
+  raw_token: string;
+  expires_at: string;
+  created_at: string;
+};
+
+export type PortalLink = {
+  id: string;
+  work_order_id: string;
+  expires_at: string;
+  revoked_at: string | null;
+  created_by_id: string | null;
+  created_at: string;
+  last_accessed_at: string | null;
+  is_active: boolean;
+};
+
+export type CustomerJobStatus = {
+  work_order_id: string;
+  title: string;
+  status: string;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
+  customer_name: string | null;
+  location_label: string | null;
+  asset_name: string | null;
+  service_summary: string | null;
+  checklist_progress: { completed: number; total: number } | null;
+  parts: { part_name: string; quantity: string }[];
+  acknowledgement_recorded: boolean;
+  acknowledged_at: string | null;
+  generated_at: string;
+  link_expires_at: string;
+};
+
+export async function createPortalLink(
+  token: string,
+  workOrderId: string,
+  expireHours?: number
+): Promise<PortalLinkCreated> {
+  return apiSend<PortalLinkCreated>(
+    `/work-orders/${workOrderId}/portal-links`,
+    token,
+    "POST",
+    expireHours ? { expire_hours: expireHours } : {}
+  );
+}
+
+export async function listPortalLinks(
+  token: string,
+  workOrderId: string
+): Promise<PortalLink[]> {
+  return apiGet<PortalLink[]>(
+    `/work-orders/${workOrderId}/portal-links`,
+    token
+  );
+}
+
+export async function revokePortalLink(
+  token: string,
+  linkId: string
+): Promise<PortalLink> {
+  return apiSend<PortalLink>(`/portal-links/${linkId}/revoke`, token, "POST");
+}
+
+export async function fetchPublicJobStatus(
+  rawToken: string
+): Promise<CustomerJobStatus> {
+  const res = await fetch(
+    `${API_BASE}/public/job-status?token=${encodeURIComponent(rawToken)}`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json();
+}

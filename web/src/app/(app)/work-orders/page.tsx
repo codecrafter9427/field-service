@@ -6,11 +6,15 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   apiGet,
   apiSend,
+  createPortalLink,
+  listPortalLinks,
+  revokePortalLink,
   type Checklist,
   type Customer,
   type JobActivity,
   type Page,
   type PartUsed,
+  type PortalLink,
   type ServiceLocation,
   type Technician,
   type TimeEntry,
@@ -53,6 +57,9 @@ export default function WorkOrdersPage() {
   const [partName, setPartName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+  const [portalLinks, setPortalLinks] = useState<PortalLink[]>([]);
+  const [portalUrl, setPortalUrl] = useState<string | null>(null);
+  const [portalBusy, setPortalBusy] = useState(false);
 
   const [title, setTitle] = useState("");
   const [customerId, setCustomerId] = useState("");
@@ -104,6 +111,14 @@ export default function WorkOrdersPage() {
       setChecklists(cls);
       setTimeEntries(times);
       setParts(usedParts);
+      setPortalUrl(null);
+      try {
+        const links = await listPortalLinks(token, workOrderId);
+        setPortalLinks(links);
+      } catch {
+        // Technicians cannot list portal links — ignore 403
+        setPortalLinks([]);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load job detail");
     }
@@ -275,6 +290,49 @@ export default function WorkOrdersPage() {
       await loadDetail(selected.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Parts entry failed");
+    }
+  }
+
+  async function onCreatePortalLink() {
+    if (!selected) return;
+    const token = getToken();
+    if (!token) return;
+    setPortalBusy(true);
+    setError(null);
+    try {
+      const created = await createPortalLink(token, selected.id);
+      const absolute = `${window.location.origin}${created.url_path}`;
+      setPortalUrl(absolute);
+      try {
+        await navigator.clipboard.writeText(absolute);
+      } catch {
+        // Clipboard may be denied; URL still shown
+      }
+      const links = await listPortalLinks(token, selected.id);
+      setPortalLinks(links);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not create customer status link"
+      );
+    } finally {
+      setPortalBusy(false);
+    }
+  }
+
+  async function onRevokePortalLink(linkId: string) {
+    if (!selected) return;
+    const token = getToken();
+    if (!token) return;
+    setPortalBusy(true);
+    try {
+      await revokePortalLink(token, linkId);
+      const links = await listPortalLinks(token, selected.id);
+      setPortalLinks(links);
+      setPortalUrl(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Revoke failed");
+    } finally {
+      setPortalBusy(false);
     }
   }
 
@@ -471,6 +529,48 @@ export default function WorkOrdersPage() {
                 >
                   Printable service report
                 </Link>
+                <div className="portal-box">
+                  <h3 style={{ margin: "0 0 0.5rem", fontSize: "1rem" }}>
+                    Customer status link
+                  </h3>
+                  <p className="muted" style={{ marginTop: 0 }}>
+                    Share a read-only job status page (no internal notes or rates).
+                  </p>
+                  <button
+                    type="button"
+                    className="btn small"
+                    disabled={portalBusy}
+                    onClick={() => void onCreatePortalLink()}
+                  >
+                    Create &amp; copy link
+                  </button>
+                  {portalUrl ? (
+                    <p className="portal-url">
+                      Copied (shown once): {portalUrl}
+                    </p>
+                  ) : null}
+                  {portalLinks.filter((l) => l.is_active).length > 0 ? (
+                    <ul className="stack" style={{ marginTop: "0.75rem" }}>
+                      {portalLinks
+                        .filter((l) => l.is_active)
+                        .map((l) => (
+                          <li key={l.id}>
+                            Expires {new Date(l.expires_at).toLocaleString()}{" "}
+                            <button
+                              type="button"
+                              className="btn secondary small"
+                              disabled={portalBusy}
+                              onClick={() => void onRevokePortalLink(l.id)}
+                            >
+                              Revoke
+                            </button>
+                          </li>
+                        ))}
+                    </ul>
+                  ) : (
+                    <p className="muted">No active links for this job.</p>
+                  )}
+                </div>
               </>
             ) : (
               <p className="muted">Select a job</p>

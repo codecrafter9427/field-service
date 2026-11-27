@@ -9,8 +9,16 @@ from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.rate_limit import reset_rate_limits
 from app.main import app
 from scripts.seed import seed
+
+
+@pytest.fixture(autouse=True)
+def _clear_rate_limits():
+    reset_rate_limits()
+    yield
+    reset_rate_limits()
 
 
 @pytest.fixture(scope="session")

@@ -415,6 +415,61 @@ table.data th {
   padding-bottom: 0.35rem;
 }
 
+.status-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+
+.status-hero {
+  margin-bottom: 1.5rem;
+}
+
+.status-hero .brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.75rem;
+}
+
+.status-hero h1 {
+  margin: 0 0 0.35rem;
+  font-size: 1.75rem;
+}
+
+.status-panel .status-dl {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1rem 0;
+}
+
+.status-panel .status-dl dt {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.status-panel .status-dl dd {
+  margin: 0.2rem 0 0;
+}
+
+.status-panel ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.portal-box {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.portal-url {
+  font-size: 0.85rem;
+  word-break: break-all;
+  color: var(--muted);
+}
+
 @media print {
   :root {
     --bg: #ffffff;

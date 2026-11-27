@@ -9,7 +9,8 @@ def test_demo_login_dispatcher(client):
     assert res.status_code == 200
     body = res.json()
     assert body["token_type"] == "bearer"
-    assert body["access_token"].startswith("demo:")
+    assert body["access_token"].startswith("fs1.")
+    assert not body["access_token"].startswith("demo:")
     assert body["user"]["role"] == "dispatcher"
     assert body["user"]["email"] == "dispatcher@demo.local"
     assert body["user"]["organization_id"]

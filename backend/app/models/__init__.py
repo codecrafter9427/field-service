@@ -1,10 +1,11 @@
-"""ORM models for Field Service Milestone 1."""
+"""ORM models for Field Service."""
 
 from app.core.database import Base
 from app.models.asset import Asset
 from app.models.customer import Customer, ServiceLocation
 from app.models.enums import JobActivityType, UserRole, WorkOrderPriority, WorkOrderStatus
 from app.models.organization import Organization, User
+from app.models.portal import CustomerPortalLink
 from app.models.work_order import (
     Attachment,
     AuditEvent,
@@ -39,4 +40,5 @@ __all__ = [
     "Attachment",
     "CustomerSignoff",
     "AuditEvent",
+    "CustomerPortalLink",
 ]
