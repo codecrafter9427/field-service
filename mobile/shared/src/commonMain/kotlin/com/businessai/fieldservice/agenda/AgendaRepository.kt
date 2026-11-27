@@ -2,19 +2,29 @@ package com.businessai.fieldservice.agenda
 
 import com.businessai.fieldservice.api.ApiClient
 import com.businessai.fieldservice.models.AgendaDay
+import com.businessai.fieldservice.models.ConflictResolution
+import com.businessai.fieldservice.models.ConflictView
 import com.businessai.fieldservice.models.JobDetail
+import com.businessai.fieldservice.models.JobNote
+import com.businessai.fieldservice.models.SyncBadge
 import com.businessai.fieldservice.models.WorkOrderSummary
+import com.businessai.fieldservice.sync.DrainResult
+import com.businessai.fieldservice.sync.OfflineQueue
+import com.businessai.fieldservice.sync.SyncRepository
 
 /**
- * Technician agenda + job detail repository.
+ * Technician agenda + job detail + M5 offline sync facade.
  *
- * Tries live API (`ApiClient`); falls back to demo stubs if the backend is
- * unreachable so Android Studio previews still render.
+ * Tries live API; falls back to demo stubs for agenda/login when unreachable.
+ * Offline drafts always go to the UUID queue (never demo-only memory).
  */
 class AgendaRepository(
     private val api: ApiClient = ApiClient(),
     private val preferLive: Boolean = true,
+    queue: OfflineQueue = OfflineQueue(),
 ) {
+    val sync: SyncRepository = SyncRepository(api, queue)
+
     fun todayAgenda(
         email: String = ApiClient.DEMO_TECH_EMAIL,
         password: String = ApiClient.DEMO_PASSWORD,
@@ -22,12 +32,23 @@ class AgendaRepository(
         if (preferLive) {
             try {
                 api.demoLogin(email, password)
-                return api.fetchAgenda()
+                val day = api.fetchAgenda()
+                return day.copy(
+                    jobs =
+                        day.jobs.map { job ->
+                            job.copy(syncBadge = sync.badgeFor(job.id))
+                        },
+                )
             } catch (_: Exception) {
                 // Fall through to demo stubs
             }
         }
-        return demoAgenda()
+        return demoAgenda().copy(
+            jobs =
+                demoAgenda().jobs.map { job ->
+                    job.copy(syncBadge = sync.badgeFor(job.id))
+                },
+        )
     }
 
     fun jobDetail(
@@ -35,17 +56,51 @@ class AgendaRepository(
         email: String = ApiClient.DEMO_TECH_EMAIL,
         password: String = ApiClient.DEMO_PASSWORD,
     ): JobDetail {
+        sync.cachedJob(workOrderId)?.let { return it }
+
         if (preferLive) {
             try {
                 if (api.accessToken == null) {
                     api.demoLogin(email, password)
                 }
-                return api.fetchJobDetail(workOrderId)
+                val remote = api.fetchJobDetail(workOrderId)
+                sync.cacheJob(remote)
+                return sync.cachedJob(workOrderId) ?: remote
             } catch (_: Exception) {
-                // Fall through
+                // Fall through — if we have a cached offline draft, prefer it
+                sync.cachedJob(workOrderId)?.let { return it }
             }
         }
-        return demoJobDetail(workOrderId)
+        val demo = demoJobDetail(workOrderId)
+        sync.cacheJob(demo)
+        return sync.cachedJob(workOrderId) ?: demo
+    }
+
+    fun addNote(workOrderId: String, text: String): JobDetail {
+        // Ensure cache is warm
+        jobDetail(workOrderId)
+        return sync.addNoteOffline(workOrderId, text)
+    }
+
+    fun toggleChecklist(workOrderId: String, itemId: String, isCompleted: Boolean): JobDetail {
+        jobDetail(workOrderId)
+        return sync.toggleChecklistOffline(workOrderId, itemId, isCompleted)
+    }
+
+    fun changeStatus(workOrderId: String, status: String): JobDetail {
+        jobDetail(workOrderId)
+        return sync.changeStatusOffline(workOrderId, status)
+    }
+
+    fun drainQueue(): DrainResult = sync.drain()
+
+    fun conflicts(workOrderId: String): List<ConflictView> = sync.conflictsFor(workOrderId)
+
+    fun resolveConflict(opId: String, resolution: ConflictResolution): JobDetail? =
+        sync.resolveConflict(opId, resolution)
+
+    fun pendingCount(): Int = sync.queueSnapshot().count {
+        it.status.name in setOf("PENDING", "FAILED", "SYNCING")
     }
 
     fun healthHint(): String = api.healthHint()
@@ -86,6 +141,15 @@ class AgendaRepository(
             technicianName = "Demo Tech",
             scheduledStartIso = "2026-11-26T09:00:00Z",
             scheduledEndIso = "2026-11-26T11:00:00Z",
-            notes = listOf("Demo note — connect to API for real activities."),
+            updatedAt = "2026-11-26T08:00:00Z",
+            notes =
+                listOf(
+                    JobNote(
+                        id = "demo-note",
+                        text = "Demo note — connect to API for real activities.",
+                    ),
+                ),
+            checklists = emptyList(),
+            syncBadge = SyncBadge.NONE,
         )
 }

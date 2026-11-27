@@ -1,4 +1,4 @@
-# Field Service — Demo checklist (Milestone 4)
+# Field Service — Demo checklist (Milestone 5)
 
 Scripted walkthrough for portfolio demos. Fictional data only. No paid APIs.
 
@@ -11,7 +11,7 @@ Scripted walkthrough for portfolio demos. Fictional data only. No paid APIs.
 - [ ] `alembic upgrade head` && `python -m scripts.seed`
 - [ ] API: `uvicorn app.main:app --reload --port 8003`
 - [ ] Web: `npm run dev -- --port 3003` (from `web/`)
-- [ ] Confirm `GET http://localhost:8003/health` → `"milestone":"4"`
+- [ ] Confirm `GET http://localhost:8003/health` → `"milestone":"5"`
 
 ## Credentials
 
@@ -81,12 +81,14 @@ curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8003/api/v1/reports/s
 curl -s -H "Authorization: Bearer $TOKEN" "http://localhost:8003/api/v1/assignments/agenda?technician_id=<tech-uuid>"
 ```
 
-## Android (optional)
+## Android — offline sync (Milestone 5)
 
 1. Open `products/field-service/mobile` in Android Studio → Gradle sync (JDK 17)
-2. Run `androidApp` on emulator with API up on host `:8003`
-3. Agenda shows `source=api` when live; otherwise `source=demo`
-4. Tap a job for job detail (live or fallback)
+2. Run `androidApp` on emulator with API up on host `:8003` → agenda `source=api`
+3. Open a job that has a checklist; confirm notes/checklist/status controls
+4. **Airplane mode ON** → Queue note → toggle checklist → change status → badges show **Pending**
+5. **Airplane mode OFF** → **Drain queue** / **Sync now** → pending clears; web job shows note/status/checklist
+6. **Conflict demo:** on web, change the same job’s status; on mobile queue a different status (or use stale base) → drain → **Conflict** → **Keep local** or **Take server** (never silent overwrite)
 
 ## Quality gates
 
@@ -97,9 +99,9 @@ cd ../web && npm run lint && npm run typecheck
 
 ## Pass criteria
 
-- [ ] Printable report renders from saved data; browser print works without paid PDF
-- [ ] Signoff stores signer + timestamp; UI labels acknowledgement (not certified e-sign)
-- [ ] Assets create/update/archive + history views work
-- [ ] Reports show labor/parts summaries
-- [ ] pytest green; web typecheck/lint green
+- [ ] Offline note + checklist + status queue → reconnect drain succeeds
+- [ ] Conflict UI appears on stale status/checklist; keep local / take server works
+- [ ] Note idempotency: same `client_operation_id` does not duplicate
+- [ ] pytest green (includes `test_m5_offline_sync.py`)
+- [ ] M4 regression: printable report / signoff / assets / reports still work
 - [ ] README + this DEMO checklist are current

@@ -1,25 +1,37 @@
 package com.businessai.fieldservice.api
 
 /**
- * Tiny JSON helpers for demo payloads — enough for agenda/job detail without
- * adding a serialization dependency to the KMP skeleton.
+ * Tiny JSON helpers for demo payloads — enough for agenda/job detail/sync
+ * without adding a serialization dependency to the KMP skeleton.
  */
 internal object JsonLite {
     fun stringField(json: String, key: String): String? {
-        val patterns =
-            listOf(
-                """"$key"\s*:\s*"((?:\\.|[^"\\])*)"""".toRegex(),
-                """"$key"\s*:\s*null""".toRegex(),
-            )
-        val quoted = patterns[0].find(json) ?: return if (patterns[1].containsMatchIn(json)) null else null
-        return quoted.groupValues[1]
-            .replace("\\\"", "\"")
-            .replace("\\\\", "\\")
-            .replace("\\n", "\n")
+        val quoted =
+            """"$key"\s*:\s*"((?:\\.|[^"\\])*)"""".toRegex().find(json)
+        if (quoted != null) {
+            return quoted.groupValues[1]
+                .replace("\\\"", "\"")
+                .replace("\\\\", "\\")
+                .replace("\\n", "\n")
+        }
+        if (""""$key"\s*:\s*null""".toRegex().containsMatchIn(json)) return null
+        return null
     }
 
     fun requiredString(json: String, key: String): String =
         stringField(json, key) ?: error("Missing JSON string field: $key")
+
+    fun boolField(json: String, key: String): Boolean? {
+        val m = """"$key"\s*:\s*(true|false)""".toRegex().find(json) ?: return null
+        return m.groupValues[1] == "true"
+    }
+
+    fun escape(value: String): String =
+        value
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
 
     fun objectArray(json: String, arrayKey: String): List<String> {
         val marker = """"$arrayKey"\s*:\s*\[""".toRegex().find(json) ?: return emptyList()
@@ -41,6 +53,30 @@ internal object JsonLite {
         val trimmed = json.trim()
         if (!trimmed.startsWith("[")) return emptyList()
         return splitObjects(trimmed.removePrefix("[").removeSuffix("]"))
+    }
+
+    /** Extract nested `"details":{"server":{...}}` object text from a 409 body. */
+    fun nestedObject(json: String, outerKey: String, innerKey: String): String? {
+        val outer = objectField(json, outerKey) ?: return null
+        return objectField(outer, innerKey)
+    }
+
+    fun objectField(json: String, key: String): String? {
+        val marker = """"$key"\s*:\s*\{""".toRegex().find(json) ?: return null
+        val start = marker.range.last
+        var depth = 0
+        var i = start
+        while (i < json.length) {
+            when (json[i]) {
+                '{' -> depth++
+                '}' -> {
+                    depth--
+                    if (depth == 0) return json.substring(start, i + 1)
+                }
+            }
+            i++
+        }
+        return null
     }
 
     private fun splitObjects(inner: String): List<String> {

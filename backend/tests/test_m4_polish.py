@@ -8,9 +8,10 @@ def _auth(token: str) -> dict[str, str]:
 
 
 def test_health_milestone_4(client):
+    """M4 polish suite still runs; health now reports M5."""
     res = client.get("/health")
     assert res.status_code == 200
-    assert res.json()["milestone"] == "4"
+    assert res.json()["milestone"] == "5"
 
 
 def test_assets_crud_and_history(client, dispatcher_token, other_token):

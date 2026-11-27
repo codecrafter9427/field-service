@@ -286,6 +286,7 @@ def test_service_report_tenant_isolation(client: TestClient, other_token: str):
 
 
 def test_health_milestone_4(client: TestClient):
+    """AI suite health check; product milestone is now 5."""
     res = client.get("/health")
     assert res.status_code == 200
-    assert res.json()["milestone"] == "4"
+    assert res.json()["milestone"] == "5"

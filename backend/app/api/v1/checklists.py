@@ -9,7 +9,7 @@ from fastapi import APIRouter, Query
 from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DbSession
-from app.api.errors import not_found
+from app.api.errors import conflict, not_found
 from app.models import Checklist, ChecklistItem, JobActivity, WorkOrder
 from app.models.enums import JobActivityType
 from app.schemas.work_orders import (
@@ -20,6 +20,12 @@ from app.schemas.work_orders import (
 )
 
 router = APIRouter()
+
+
+def _same_instant(server: datetime, base: datetime) -> bool:
+    s = server.astimezone(timezone.utc)
+    b = base.astimezone(timezone.utc)
+    return abs((s - b).total_seconds()) < 0.001
 
 
 def _ensure_work_order(db: DbSession, user: CurrentUser, work_order_id: UUID) -> WorkOrder:
@@ -109,6 +115,13 @@ def update_checklist_item(
     )
     if item is None:
         raise not_found("Checklist item")
+
+    # M5: optimistic concurrency — never silent overwrite
+    if not _same_instant(item.updated_at, body.base_updated_at):
+        raise conflict(
+            "Checklist item was modified by another client",
+            details={"server": ChecklistItemOut.model_validate(item).model_dump(mode="json")},
+        )
 
     item.is_completed = body.is_completed
     item.completed_at = (

@@ -25,3 +25,12 @@ def not_found(entity: str = "Resource") -> HTTPException:
 
 def bad_request(code: str, message: str, details: Any = None) -> HTTPException:
     return api_error(status.HTTP_400_BAD_REQUEST, code, message, details)
+
+
+def conflict(message: str = "Resource was modified", details: Any = None) -> HTTPException:
+    return api_error(
+        status.HTTP_409_CONFLICT,
+        "conflict",
+        message,
+        details,
+    )

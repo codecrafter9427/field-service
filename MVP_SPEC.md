@@ -44,9 +44,11 @@ Draft → Scheduled → En Route → In Progress → Waiting for Parts → Compl
 | AI service report | `/api/v1/ai/service-report` | Draft + approve (human edit required) |
 | AI job prep | `/api/v1/ai/job-prep` | History summary + confirm checklist |
 | AI Service Memory | `/api/v1/ai/service-memory` | Recurring-failure search + summarize |
-| Health | `/health` | Milestone 4 |
+| Health | `/health` | Milestone 5 |
 
 Shared conventions: REST JSON, pagination/search/sort on lists, error shape `{error:{code,message,details}}`, tenant authorization on every business endpoint.
+
+**M5 sync contract:** notes accept optional `client_operation_id` (idempotent per org); status PATCH requires `base_updated_at`; checklist item PATCH requires `base_updated_at`. Stale base → `409` with `{error:{code:"conflict", details:{server}}}`.
 
 Overlap rule: when assigning or creating with a technician and both jobs have `scheduled_start`/`scheduled_end`, the API **warns** (`overlap_warning` + overlapping IDs) if intervals overlap for the same technician. Cancelled jobs are excluded. Assignment is not blocked.
 
@@ -62,8 +64,9 @@ Overlap rule: when assigning or creating with a technician and both jobs have `s
 
 - Technician agenda + job detail API clients (`ApiClient` / `AgendaRepository`)
 - Android UI: agenda list → job detail; live API with demo fallback
+- **M5:** offline UUID op queue (`OfflineQueue` / `SyncRepository`) for notes, checklist toggles, status; sync badges; conflict keep-local / take-server
 - Android Studio sync documented; device run optional
-- Offline drafts / certified e-sign → backlog
+- Attachments / signoff / time offline + certified e-sign → backlog
 
 ## AI (M3)
 
@@ -93,12 +96,20 @@ See README milestone checklists.
 6. README + DEMO.md scripted checklist
 7. KMP agenda/job detail clients polished; Android Studio sync documented
 
+### Milestone 5 (done when)
+
+1. Technician can queue note / checklist toggle / status with no network (UUID ops persisted)
+2. On reconnect, queue drains; successful ops appear on server / web timeline
+3. Stale status/checklist base → visible conflict UI (keep local / take server) — **never silent overwrite**
+4. Note retry with same `client_operation_id` does not duplicate activity
+5. pytest covers idempotency + 409; queue unit tests; DEMO airplane-mode script; no paid APIs
+
 ### Remaining backlog
 
-1. Offline notes/checklist/status sync with visible conflict handling
-2. Customer read-only job-status link
-3. iOS UI layer
-4. Attachment binary upload adapter
+1. Customer read-only job-status link
+2. iOS UI layer
+3. Attachment binary upload adapter
+4. Offline attachments / signoff / time (out of M5)
 
 ## Backlog by milestone
 
@@ -127,6 +138,9 @@ See README milestone checklists.
 - [x] E2E / scripted demo checklist (`DEMO.md`)
 - [x] Expanded lint/format/type gates
 - [x] Android agenda/job detail API clients + Studio sync docs
-- [ ] Offline sync queue (UUID ops, retry, conflict UI)
+
+### M5 — Offline sync
+
+- [x] Offline sync queue (UUID ops, retry, conflict UI) for notes/checklist/status
 - [ ] Customer job-status link
 - [ ] iOS UI layer

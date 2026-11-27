@@ -2,7 +2,7 @@
 
 Scheduling, dispatch, and job execution MVP for maintenance, repair, and installation businesses.
 
-Portfolio product (Agent C). **Milestone 4** polishes dispatcher UX, browser-print service reports, customer acknowledgement signoff, assets CRUD + service history, labor/parts reports, and KMP agenda/job-detail API clients. No paid APIs.
+Portfolio product (Agent C). **Milestone 5** adds offline notes/checklist/status sync (UUID op queue, reconnect drain, visible conflicts). Builds on M4 dispatcher polish, printable reports, acknowledgement signoff, assets, and KMP agenda clients. No paid APIs.
 
 ## Purpose
 
@@ -61,7 +61,7 @@ python -m scripts.seed
 uvicorn app.main:app --reload --port 8003
 ```
 
-Health: `GET http://localhost:8003/health` → `milestone: "4"`  
+Health: `GET http://localhost:8003/health` → `milestone: "5"`  
 OpenAPI: `http://localhost:8003/docs`
 
 ### 4. Web
@@ -98,7 +98,7 @@ npm run lint
 npm run typecheck
 ```
 
-Coverage: `/health` (M4), demo login, tenant isolation, CRUD, schedule overlap, Demo AI, Service Memory, **assets CRUD**, **signoff timestamp**, **parts + labor/parts reports**, printable report payload.
+Coverage: `/health` (M5), demo login, tenant isolation, CRUD, schedule overlap, Demo AI, Service Memory, **assets CRUD**, **signoff timestamp**, **parts + labor/parts reports**, printable report payload, **note idempotency + status/checklist 409**.
 
 ## AI setup (works without Ollama)
 
@@ -130,15 +130,13 @@ All passwords: `demo` (fictional data only).
 
 Scripted checklist: **[DEMO.md](DEMO.md)**.
 
-### Demo steps (Milestone 4)
+### Demo steps (Milestone 5)
 
 1. Start DB → migrate → seed → API `:8003` → web `:3003`
-2. Login as dispatcher → dashboard shows completion rate
-3. Work order → notes/parts → **Printable service report** → browser Print
-4. Record acknowledgement (canvas + name) → verify timestamp (not certified e-sign)
-5. Assets → create/edit → service history; Customers → service history
-6. Reports → labor/parts summary
-7. Optional: Android Studio sync + agenda (live or demo fallback)
+2. Login as dispatcher → dashboard / work orders (regression)
+3. Android: airplane mode → queue note + checklist + status → reconnect → **Drain queue**
+4. Force conflict: change status on web, then drain a stale mobile status → **Conflict** → Keep local / Take server
+5. Optional M4 regression: printable report, acknowledgement, assets, labor/parts reports
 
 ## Seed contents
 
@@ -163,7 +161,7 @@ Scripted checklist: **[DEMO.md](DEMO.md)**.
 
 - [x] DemoAIProvider + optional Ollama, service report/job prep/Service Memory + web UI + tests
 
-### M4 — Polish (this milestone)
+### M4 — Polish
 
 - [x] Printable service report via browser print CSS (no paid PDF)
 - [x] Acknowledgement signature stub + timestamped signoff API
@@ -173,16 +171,23 @@ Scripted checklist: **[DEMO.md](DEMO.md)**.
 - [x] Lint/typecheck scripts + expanded pytest
 - [x] README + DEMO.md
 - [x] KMP agenda/job detail API clients + Android Studio sync docs
-- [ ] Offline sync queue + conflict UI (backlog)
+
+### M5 — Offline sync (this milestone)
+
+- [x] Offline UUID op queue + reconnect drain (notes / checklist / status)
+- [x] Note `client_operation_id` idempotency + status/checklist `base_updated_at` → 409
+- [x] Android sync badges + conflict resolve (keep local / take server)
+- [x] pytest + queue unit tests + airplane-mode DEMO script
 - [ ] Customer read-only job-status link (backlog)
 - [ ] iOS UI layer (backlog)
+- [ ] Offline attachments / signoff / time (out of scope for M5)
 - [ ] Certified e-sign / paid PDF (out of scope)
 
 ## Limitations (current)
 
 - Acknowledgement is **not** a certified electronic signature
 - Print uses browser Print / Save as PDF — no server-side PDF engine
-- Offline sync queue not implemented
+- Offline sync covers notes/checklist/status only (no attachments/signoff/time offline)
 - Auth is demo bearer tokens — not production-secure
 - Android device run optional; iOS HTTP transport stubbed
 - Attachment binary upload still metadata/Coming Soon
@@ -190,7 +195,7 @@ Scripted checklist: **[DEMO.md](DEMO.md)**.
 
 ## API groups
 
-| Group | Prefix | M4 status |
+| Group | Prefix | M5 status |
 | --- | --- | --- |
 | Auth | `/api/v1/auth` | Demo login + `/me` |
 | Customers | `/api/v1/customers` | CRUD + `/service-history` |

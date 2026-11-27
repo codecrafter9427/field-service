@@ -93,12 +93,13 @@ def test_work_order_notes_checklist_time(client, dispatcher_token):
         },
     )
     assert checklist.status_code == 201
-    item_id = checklist.json()["items"][0]["id"]
+    item = checklist.json()["items"][0]
+    item_id = item["id"]
 
     patch_item = client.patch(
         f"/api/v1/checklists/items/{item_id}",
         headers=_auth(dispatcher_token),
-        json={"is_completed": True},
+        json={"is_completed": True, "base_updated_at": item["updated_at"]},
     )
     assert patch_item.status_code == 200
     assert patch_item.json()["is_completed"] is True

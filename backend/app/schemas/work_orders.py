@@ -40,6 +40,8 @@ class WorkOrderUpdate(BaseModel):
     skill_required: str | None = Field(default=None, max_length=100)
     estimate_amount: Decimal | None = None
     labor_rate: Decimal | None = None
+    # Optimistic concurrency token — required when changing status (M5)
+    base_updated_at: datetime | None = None
 
 
 class WorkOrderOut(BaseModel):
@@ -118,6 +120,8 @@ class ScheduleItem(BaseModel):
 
 class NoteCreate(BaseModel):
     note: str = Field(min_length=1)
+    client_operation_id: UUID | None = None
+    client_occurred_at: datetime | None = None
 
 
 class JobActivityOut(BaseModel):
@@ -128,6 +132,8 @@ class JobActivityOut(BaseModel):
     activity_type: str
     note: str | None = None
     occurred_at: datetime
+    client_operation_id: UUID | None = None
+    client_occurred_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -139,6 +145,7 @@ class ChecklistItemOut(BaseModel):
     is_completed: bool
     sort_order: int
     completed_at: datetime | None = None
+    updated_at: datetime
 
     model_config = {"from_attributes": True}
 
@@ -156,6 +163,9 @@ class ChecklistOut(BaseModel):
 
 class ChecklistItemUpdate(BaseModel):
     is_completed: bool
+    # Optimistic concurrency token — required (M5); mismatch → 409
+    base_updated_at: datetime
+
 
 
 class ChecklistCreate(BaseModel):

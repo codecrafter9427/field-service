@@ -169,7 +169,10 @@ export default function WorkOrdersPage() {
     const token = getToken();
     if (!token) return;
     try {
-      await apiSend(`/work-orders/${selected.id}`, token, "PATCH", { status: next });
+      await apiSend(`/work-orders/${selected.id}`, token, "PATCH", {
+        status: next,
+        base_updated_at: selected.updated_at,
+      });
       await load();
       await loadDetail(selected.id);
     } catch (err) {
@@ -220,9 +223,14 @@ export default function WorkOrdersPage() {
   async function toggleChecklistItem(itemId: string, isCompleted: boolean) {
     const token = getToken();
     if (!token || !selected) return;
+    const item = checklists
+      .flatMap((c) => c.items)
+      .find((i) => i.id === itemId);
+    if (!item) return;
     try {
       await apiSend(`/checklists/items/${itemId}`, token, "PATCH", {
         is_completed: isCompleted,
+        base_updated_at: item.updated_at,
       });
       await loadDetail(selected.id);
     } catch (err) {

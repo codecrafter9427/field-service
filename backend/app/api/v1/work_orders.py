@@ -5,12 +5,13 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Response
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import CurrentUser, DbSession
-from app.api.errors import bad_request, not_found
+from app.api.errors import bad_request, conflict, not_found
 from app.models import (
     Customer,
     JobActivity,
@@ -35,6 +36,13 @@ router = APIRouter()
 
 VALID_STATUSES = {s.value for s in WorkOrderStatus}
 VALID_PRIORITIES = {p.value for p in WorkOrderPriority}
+
+
+def _same_instant(server: datetime, base: datetime) -> bool:
+    """Compare optimistic-concurrency tokens (tolerate serialization precision)."""
+    s = server.astimezone(timezone.utc)
+    b = base.astimezone(timezone.utc)
+    return abs((s - b).total_seconds()) < 0.001
 
 
 def _latest_assignment(
@@ -328,11 +336,25 @@ def update_work_order(
 ) -> WorkOrderOut:
     row = _get_work_order(db, user, work_order_id)
     data = body.model_dump(exclude_unset=True)
+    base_updated_at = data.pop("base_updated_at", None)
 
     if "status" in data and data["status"] not in VALID_STATUSES:
         raise bad_request("invalid_status", f"Unknown status: {data['status']}")
     if "priority" in data and data["priority"] not in VALID_PRIORITIES:
         raise bad_request("invalid_priority", f"Unknown priority: {data['priority']}")
+
+    # M5: status changes require optimistic concurrency — never silent overwrite
+    if "status" in data:
+        if base_updated_at is None:
+            raise bad_request(
+                "base_updated_at_required",
+                "base_updated_at is required when updating status",
+            )
+        if not _same_instant(row.updated_at, base_updated_at):
+            raise conflict(
+                "Work order was modified by another client",
+                details={"server": _to_out(db, row).model_dump(mode="json")},
+            )
 
     new_start = data.get("scheduled_start", row.scheduled_start)
     new_end = data.get("scheduled_end", row.scheduled_end)
@@ -441,16 +463,49 @@ def add_note(
     body: NoteCreate,
     user: CurrentUser,
     db: DbSession,
+    response: Response,
 ) -> JobActivityOut:
     _get_work_order(db, user, work_order_id)
+
+    # Idempotent replay: same client_operation_id → same activity (no duplicate)
+    if body.client_operation_id is not None:
+        existing = db.scalar(
+            select(JobActivity).where(
+                JobActivity.organization_id == user.organization_id,
+                JobActivity.client_operation_id == body.client_operation_id,
+            )
+        )
+        if existing is not None:
+            response.status_code = 200
+            return JobActivityOut.model_validate(existing)
+
+    occurred = body.client_occurred_at or datetime.now(tz=timezone.utc)
     activity = JobActivity(
         organization_id=user.organization_id,
         work_order_id=work_order_id,
         actor_user_id=user.id,
         activity_type=JobActivityType.NOTE.value,
         note=body.note.strip(),
+        client_operation_id=body.client_operation_id,
+        client_occurred_at=body.client_occurred_at,
+        occurred_at=occurred,
     )
     db.add(activity)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        if body.client_operation_id is None:
+            raise
+        existing = db.scalar(
+            select(JobActivity).where(
+                JobActivity.organization_id == user.organization_id,
+                JobActivity.client_operation_id == body.client_operation_id,
+            )
+        )
+        if existing is None:
+            raise
+        response.status_code = 200
+        return JobActivityOut.model_validate(existing)
     db.refresh(activity)
     return JobActivityOut.model_validate(activity)

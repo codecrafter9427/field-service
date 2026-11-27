@@ -200,6 +200,13 @@ class JobActivity(
     occurred_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    # Mobile offline queue idempotency key (unique per org when set)
+    client_operation_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True, index=True
+    )
+    client_occurred_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     work_order: Mapped[WorkOrder] = relationship(back_populates="activities")
 

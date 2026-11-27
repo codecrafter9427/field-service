@@ -7,4 +7,4 @@ def test_health_ok(client):
     body = res.json()
     assert body["status"] == "ok"
     assert body["service"] == "field-service"
-    assert body["milestone"] == "4"
+    assert body["milestone"] == "5"

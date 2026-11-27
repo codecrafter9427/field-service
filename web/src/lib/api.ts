@@ -55,6 +55,7 @@ export type WorkOrder = {
   technician_name: string | null;
   overlap_warning: boolean;
   overlapping_work_order_ids: string[];
+  updated_at: string;
 };
 
 export type Technician = {
@@ -108,6 +109,7 @@ export type Checklist = {
     label: string;
     is_completed: boolean;
     is_required: boolean;
+    updated_at: string;
   }[];
 };
 
